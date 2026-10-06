@@ -9,6 +9,7 @@ A private, local-first reading journal for Android and iOS, built with Flutter. 
 | [design-system.md](design-system.md) | colours, type, components, the bookshelf, keepsakes, layout lessons |
 | [decisions.md](decisions.md) | why things are the way they are; open questions |
 | [testing.md](testing.md) | how to run tests, what each covers, what is and is not verified |
+| [backend.md](backend.md) | the Python/Postgres server for accounts, friends and shared shelves (not used by the app yet) |
 | [rebuild-guide.md](rebuild-guide.md) | order of work, traps, things to do differently, commands |
 | [changelog.md](changelog.md) | what changed and when |
 | [implementation-status.md](implementation-status.md) | data-integrity guarantees, checks run, what remains before release |

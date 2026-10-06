@@ -56,3 +56,9 @@ app.*.map.json
 /dist/
 *.apk
 *.aab
+
+# Backend (server/): secrets and local environments
+/server/.env
+/server/.venv/
+__pycache__/
+.pytest_cache/

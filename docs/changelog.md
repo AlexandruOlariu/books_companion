@@ -2,6 +2,12 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-07: backend for friends (server only)
+
+- **New `server/`:** Python (FastAPI) and PostgreSQL service with email and password accounts, friend requests and blocks, username lookup, phone-number contact matching (opt-in, hashed with a pepper), and a published shelf that friends can read (D35, `backend.md`). Runs with Docker Compose on `127.0.0.1:8300`; public path `https://ai.duk-tech.com/books-api/` via an nginx include (`server/deploy/`), which needs a one-time `sudo` step.
+- 46 server tests against a real Postgres, run by a new `server-tests` CI job.
+- **The app does not use it yet.** Nothing in `lib/` changed, so the privacy policy and store declarations are unchanged; `backend.md` lists what the client change must update.
+
 ## 2026-10-07: series, sorting, one Finished choice
 
 - **One "Finished" choice** when adding a book; "Read in the past" removed (D31).

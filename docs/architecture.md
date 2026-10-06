@@ -30,7 +30,7 @@ presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepos
                                   ^ domain rules live in plain Dart (models.dart, search.dart, sorting.dart)
 ```
 
-- Screens call `LibraryRepository`, never Drift. A remote implementation could be added later behind the same interface; no sync code exists.
+- Screens call `LibraryRepository`, never Drift. A remote implementation could be added later behind the same interface; no sync code exists. A separate server (`server/`, see `backend.md`) exists for friends and published shelves, but nothing in `lib/` calls it yet.
 - Domain rules (date precision, validation, search ranking, shelf packing, keepsake thresholds) are plain Dart functions so tests can cover them without widgets.
 - `LibraryRepository.load()` returns an immutable `LibrarySnapshot` (books, completions, sessions, pins) that the UI reads; writes invalidate `libraryProvider`.
 

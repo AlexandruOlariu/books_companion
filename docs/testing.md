@@ -36,6 +36,20 @@ Latest results (2026-10-06): analyzer clean; format clean; 85 unit and widget te
 | `test/preferences_test.dart` | 4 | preferences survive a restart, later writes win, a damaged file is ignored, the memory store |
 | `integration_test/core_flows_test.dart` | 1 | on an Android emulator: Library, Reading, update page, add pin, Journal history, add a past book with year-only precision; asserts the stored value is `2019` and the session count is unchanged |
 
+### Server tests (`server/tests/`, pytest, 46 tests)
+
+Run from `server/` with a Postgres test database (see `backend.md`); the suite builds the schema from the Alembic migrations and truncates between tests. CI runs it in the `server-tests` job. They are separate from the Flutter count above.
+
+| File | Tests | Covers |
+| --- | --- | --- |
+| `server/tests/test_auth.py` | 8 | registration and validation, unique normalised email and username, login with identical answers for a wrong password and an unknown email, login rate limit, protected routes, refresh rotation and reuse revoking every session, logout |
+| `server/tests/test_me.py` | 7 | profile edits, username conflict, the phone stored only as a hash, invalid numbers, discoverability needing a phone, password change signing out other devices, account deletion cascading |
+| `server/tests/test_discovery.py` | 9 | exact username lookup only, nothing but id, username and display name exposed, opt-in contact matching, number formats, self and blocked excluded, the daily number budget, oversized lists, contacts not stored |
+| `server/tests/test_friends.py` | 10 | request and accept, only the asked person can accept, asking back accepts, duplicates, decline and cancel, removal, blocking, privacy of the lists |
+| `server/tests/test_shelf.py` | 9 | publish replaces, only accepted friends read it, unfriending or unpublishing hides it, private fields rejected, date precision rules, finishes versus status, future dates, limits, sign-in required |
+| `server/tests/test_migrations.py` | 3 | models equal the migrations, health check, interactive docs off |
+| `server/tests/conftest.py` | n/a | fixtures; refuses a test database whose name does not end in `_test` |
+
 ## Conventions that avoid false failures
 
 - Layout tests set `tester.view.physicalSize = Size(1080, 2400)` and `devicePixelRatio = 3` (360 x 800 logical) and scroll with `tester.drag`, because the default surface is wider and shorter than a phone.

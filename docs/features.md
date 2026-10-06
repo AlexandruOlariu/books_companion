@@ -2,7 +2,7 @@
 
 This is the behavioural specification of the working POC, written from the code. It describes what exists, not what was planned (see `product-plan.md` for the original plan and `decisions.md` for where and why the build departs from it). Exact user-facing strings are quoted where tests or the design depend on them.
 
-**Product in one line:** a private, local-first reading journal for Android and iOS. No account, backend, analytics, or required network. The reader records what they know and leaves unknown details unknown.
+**Product in one line:** a private, local-first reading journal for Android and iOS. No account, analytics, or required network (a friends server exists but the app does not use it yet; see `backend.md`). The reader records what they know and leaves unknown details unknown.
 
 ## Honesty rules (they shape every feature)
 
@@ -153,4 +153,4 @@ Every tap target is at least 48 x 48. Books, spines, and keepsakes expose labels
 
 ## Not implemented
 
-Sign-in, cloud sync, social features, a web app or backend, notifications, payments, ISBN camera scanning, ratings, custom shelves, remembered start dates, editing a recorded finish date, multiple authors per book, dark theme, and process-death recovery beyond the drafts above. See `implementation-status.md` for what is unverified on real devices.
+Sign-in, friends and any other use of the server in `backend.md` (the server exists but the app does not call it), cloud sync, a web app, notifications, payments, ISBN camera scanning, ratings, custom shelves, remembered start dates, editing a recorded finish date, multiple authors per book, dark theme, and process-death recovery beyond the drafts above. See `implementation-status.md` for what is unverified on real devices.
