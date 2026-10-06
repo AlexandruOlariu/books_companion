@@ -24,7 +24,7 @@ See the final verification notes below for execution results. Tests cover partia
 - Profile a 500-book library on a chosen midrange physical Android device. Emulator timings do not establish physical-device performance.
 - Have a new reader try adding a past book, updating a page, and finding a pin without coaching. The visual direction has implementation checks, not user usability validation.
 - Exercise TalkBack/VoiceOver, reduced motion, maximum platform text settings, and interrupted background/process lifecycle behavior on real devices.
-- Run the release workflow once on GitHub (`release.md` section 3a) and set the `ANDROID_KEYSTORE_*` secrets; until then it is untested there.
+- Back up the upload key in `~/.config/reading-library-signing/` (see `release.md`). Move the release workflow's actions off the deprecated Node 20 and `setup-java@v4`.
 - Choose the permanent bundle identifier (`tool/set_bundle_id.sh`), create the Android upload key and iOS signing team, publish the privacy policy, and complete store listings. See `release.md`, `privacy-policy.md`, and `store-privacy.md`.
 - Final icon review and store-size screenshots from a seeded build.
 - Cover paths are stored as absolute paths. If iOS relocates the app container (for example restoring a device backup to a new device), covers would need re-resolving against the current documents directory; this has not been observed here and needs checking on iOS.
@@ -66,4 +66,9 @@ See the final verification notes below for execution results. Tests cover partia
 
 - Commit `2f53858`: both jobs of `checks.yml` passed (`analyze-and-test`, 10 minutes; `ios-build`, shown as 1 minute). This is the first evidence that the iOS simulator build compiles and that format, analyze, tests, and the docs check pass on a clean checkout. Observed in the GitHub UI by the owner; not independently re-run here. Check the `ios-build` log to confirm it compiled rather than reusing a cache.
 - The release workflow has not run yet; run it by hand first (`release.md` section 3a).
+
+## Executed checks — first release (6 October 2026)
+
+- The release workflow ran by hand (build passed in 5 minutes; publishing correctly skipped), then the tag `v0.1.0` built in 6 minutes and published the release. The downloaded APK matched `SHA256SUMS.txt`, was signed by the upload key (`CN=Reading Library, OU=Upload key`), had package `app.readingroom.reading_library`, version 0.1.0 (code 2), and requested only `INTERNET`. Observed through the GitHub CLI; the APK was not installed on a phone.
+- The release is not a pre-release because the signing secrets were set. The repository is private.
 

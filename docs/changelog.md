@@ -2,6 +2,11 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-06 (late night): first release
+
+- Created the Android upload key (kept in `~/.config/reading-library-signing/`, mirrored into repository secrets), ran the release workflow by hand, then tagged `v0.1.0`: CI built, signed, and published the first GitHub Release (APK plus SHA-256). Verified the published APK's checksum, signer, and version.
+- The repository is private, so testers need collaborator access or a direct file.
+
 ## 2026-10-06 (late night): first CI run
 
 - Both jobs of `checks.yml` passed on GitHub for commit `2f53858`: the Linux checks and the macOS iOS simulator build. First evidence that the iOS build compiles and that the docs check works on a clean checkout. Release workflow not yet run.
