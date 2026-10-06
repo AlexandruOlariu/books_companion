@@ -34,6 +34,7 @@ Verify each screen in a running emulator, not only in widget tests.
 - **Date pickers.** Never default "today" for a past book; require an explicit precision and an explicit pick.
 - **Snackbars cover Save.** Dismiss the current snackbar before opening a sheet (an integration test exposed this).
 - **Restore must stage files first,** validate everything, then replace in one transaction, deleting staged files on failure.
+- **Migrations are cheap if set up first.** Dumping the schema and generating steps before the first change made the first real migration (adding columns) a few lines plus a test, and it passed on a real v1 database on the first try. Keep additive, nullable changes where possible.
 - **Drift `Value(null)`** writes NULL to a non-null column on update; use `Value.absent()` to keep a column unchanged.
 - **Open Library is accent-tolerant but not typo-tolerant;** many titles have no cover. Do not promise covers.
 - **Android release needs `INTERNET`** in the main manifest; only the debug manifest has it by default.

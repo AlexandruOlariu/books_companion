@@ -12,6 +12,10 @@ This is the behavioural specification of the working POC, written from the code.
 4. Shelf keepsakes are earned by the count of finished books only. Never by streaks, pages, time, or opening the app.
 5. Personal notes (pins) stay on the device and are never generated automatically.
 
+## Wishlist
+
+**Wishlist** is the status for books you want to read but have not started. It was first called "Want to read" and was renamed to Wishlist (see D34); it is the same status (stored as `want_to_read`), and nothing else changed. Wishlist books appear on the shelf like any other book and have their own filter chip; a wishlist book offers **Start reading** on its details page.
+
 ## Navigation
 
 Three labelled bottom destinations: **Library**, **Reading**, **Journal**. A settings button (tune icon) sits in the top bar. A floating labelled **Add book** button is on Library. There is no sign-in and no onboarding.
@@ -20,10 +24,10 @@ Routes: `/library`, `/reading`, `/journal?year=YYYY` (inside the shell); `/add` 
 
 ## Library
 
-Top to bottom: eyebrow, title **My library**, a year selector with a **N books finished** button, status filters, a search field, the shelf, and the floating button.
+Top to bottom: eyebrow, title **My library**, a year selector with a **N books finished** button, status filters, a search field, the count, a **Sort** button and the **List/Shelf** switch, the shelf, and the floating button.
 
 - **Year selector:** `All time` or a completion year. It is shown only when the status filter is All or Finished (unfinished books have no completion year). Selecting a year narrows to books finished in it. The **N books finished** button opens the Journal for that period.
-- **Status filters:** All, Reading, Want to read, Finished. They wrap onto a second line on narrow phones so none is ever off-screen. Choosing Reading or Want to read clears the year.
+- **Status filters:** All, Reading, Wishlist, Finished. They wrap onto a second line on narrow phones so none is ever off-screen. Choosing Reading or Wishlist clears the year.
 - **Search:** see "Library search" below.
 - **Shelf / List switch:** the shelf is the signature view. The list (cover thumbnail, title, author, status) is used automatically at large text sizes (system text scale above about 1.44x) and can be chosen with the switch.
 - **Selected-book panel:** above the shelf, tapping a spine or cover shows its cover, title, author, and status (or page progress for books being read, and pin count). Tapping the panel opens the book. It grows with its content rather than having a fixed height.
@@ -31,9 +35,19 @@ Top to bottom: eyebrow, title **My library**, a year selector with a **N books f
 - **Keepsakes note:** a line under the shelf, e.g. "Keepsakes: 3 of 7. Finish 2 more books for a tea mug." followed by "Earned by books you finish, never by streaks." Shown only when the whole shelf is visible (see Keepsakes).
 - **Empty states:** an empty library shows "A shelf of possibilities." with **Add your first book** and **Add books I've already read**. A filtered or searched empty shelf never says "first book" (see below). Actions have bottom clearance so the floating button never covers them.
 
+### Sorting and series
+
+**Sort: Title** is the default. The **Sort** button opens a sheet with three choices, and the choice is remembered between launches (a small device-local file).
+
+- **Title (A-Z):** alphabetical, ignoring case, diacritics, and a leading "The", "A", or "An" ("The Hobbit" sits under H).
+- **Author (A-Z):** by the first author's surname (works for "Given Surname", "Surname, Given", and several authors joined by commas), then by title.
+- **Recently added:** newest first.
+- **Series stay together.** In both alphabetical sorts, books with the same series name sit side by side in number order, at the place of the series name; unnumbered books follow the numbered ones. A selected book shows "Series name, book N" in the panel and on its details page.
+- The sort applies to the shelf and the list. A typed search ranks by relevance and uses the sort only to order equally good matches.
+
 ### Library search
 
-Searches title and author together, entirely on the device.
+Searches title, author, and series together, entirely on the device.
 
 - Ignores case, diacritics and punctuation: `calinescu` finds Călinescu, `morometii` finds Moromeții.
 - Every typed word must appear, in any order, and may be partial: `mcfadden freida` and `mcf hous` both find *The Housemaid* by Freida McFadden.
@@ -51,10 +65,11 @@ Seven small objects drawn in code (no image assets): Brass bookend (1 finished b
 
 Single form. For new books it starts with a **Search online** button ("Or enter the details yourself below.").
 
-Fields: Title, Author (one text field, one author), Page count (optional), Language (optional), cover (**Choose a cover** from the gallery, a preview of the selected cover, **Use a generated cover**). New books also choose **Add to**: Want to read, Reading now, Finished, or Read in the past, plus **Add another book after saving**.
+Fields: Title, Author (one text field, one author), **Series** and **Book number in the series** (both optional), Page count (optional), Language (optional), cover (**Choose a cover** from the gallery, a preview of the selected cover, **Use a generated cover**). New books also choose **Add to**: Wishlist, Reading now, or Finished, plus **Add another book after saving**.
 
-- **Finished / Read in the past** require the finish-date choice (below); today is never assigned silently.
-- **Add another book** keeps the sheet open after saving, clears the fields, and shows e.g. "Dune added to 2019. Ready for another book." The date must be chosen again for each book.
+- **Finished** requires the finish-date choice (below); today is never assigned silently. There is deliberately one Finished choice: remembering a book from long ago and finishing one yesterday are the same flow (choose a day, a month, a year, or "I don't remember"). Entering a book as Finished is recorded as a remembered finish (shown as "Remembered" in the Journal); finishing a book from the Reading tab is recorded as tracked. **Add books I've already read** opens this form with Finished preselected.
+- **Series:** a free-text name and a whole number (1 or more). A number needs a name. Under the name field, quick-pick chips list up to five existing series; choosing one fills the name and suggests the next number. Editing can change or clear the series.
+- **Add another book** keeps the sheet open after saving, clears the fields, and shows e.g. "Dune added to 2019. Ready for another book." The series name is kept and the number moves on by one, so a whole series can be entered in a row. The date must be chosen again for each book.
 - **Edit** changes title, author, pages, language, and cover. It refuses a page count that would invalidate existing progress, sessions, or pins. It never changes status or history.
 - The selected cover is copied into app storage. The cover preview and an explanatory message show whenever a cover is present.
 - Validation messages appear inline and the typed input is kept. Dirty forms ask before discarding.

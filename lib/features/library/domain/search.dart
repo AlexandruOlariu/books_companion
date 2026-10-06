@@ -105,7 +105,7 @@ List<BookEntry> searchBooks(Iterable<BookEntry> books, String query) {
 int _score(BookEntry book, String q) {
   if (q.isEmpty) return 1;
   final title = foldForSearch(book.title), author = foldForSearch(book.author);
-  final all = '$title $author';
+  final all = '$title $author ${foldForSearch(book.seriesName ?? '')}';
   final words = q.split(' ');
   if (!words.every(all.contains)) return 0;
   var score = 1;

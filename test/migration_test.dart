@@ -10,13 +10,25 @@ void main() {
   late SchemaVerifier verifier;
   setUpAll(() => verifier = SchemaVerifier(GeneratedHelper()));
 
-  test('the current schema matches the frozen version-1 dump', () async {
+  test(
+    'upgrading the frozen version-1 schema reaches the current schema',
+    () async {
+      // Fails if a table or column changes without a migration step.
+      final connection = await verifier.startAt(1);
+      final db = AppDatabase(connection);
+      addTearDown(db.close);
+      await verifier.migrateAndValidate(db, db.schemaVersion);
+    },
+  );
+
+  test('the current schema matches the frozen version-2 dump', () async {
     // Fails if a table or column changes without a new schema version and a
     // dump in drift_schemas/.
-    final connection = await verifier.startAt(1);
+    final connection = await verifier.startAt(2);
     final db = AppDatabase(connection);
     addTearDown(db.close);
     await verifier.migrateAndValidate(db, db.schemaVersion);
+    expect(db.schemaVersion, 2);
   });
 
   test('a version-1 library survives upgrade to the current schema', () async {
@@ -52,7 +64,11 @@ void main() {
     final record = await upgraded.select(upgraded.readingRecords).getSingle();
     expect(record.finishedValue, '2019');
     expect(record.finishedPrecision, 'year');
-    expect((await upgraded.select(upgraded.books).getSingle()).title, 'Dune');
+    final book = await upgraded.select(upgraded.books).getSingle();
+    expect(book.title, 'Dune');
+    // The new columns exist and old rows simply have no series.
+    expect(book.seriesName, isNull);
+    expect(book.seriesNumber, isNull);
     expect(await upgraded.select(upgraded.readingSessions).get(), isEmpty);
   });
 }

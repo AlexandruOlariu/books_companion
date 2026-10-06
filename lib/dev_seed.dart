@@ -63,12 +63,32 @@ const _books = <_Seed>[
   ('Middlemarch', 'George Eliot', 880, 'W'),
   ('Beloved', 'Toni Morrison', 324, 'W'),
   ('Norwegian Wood', 'Haruki Murakami', 296, 'W'),
+  ('Dune Messiah', 'Frank Herbert', 331, '2020'),
+  ('Children of Dune', 'Frank Herbert', 444, '2021'),
+  ('Harry Potter and the Philosopher’s Stone', 'J.K. Rowling', 309, '2021'),
+  ('Harry Potter and the Chamber of Secrets', 'J.K. Rowling', 341, '2022'),
+  ('Harry Potter and the Prisoner of Azkaban', 'J.K. Rowling', 435, 'W'),
+  ('The Fellowship of the Ring', 'J.R.R. Tolkien', 423, 'W'),
+  ('The Two Towers', 'J.R.R. Tolkien', 352, 'W'),
   ('The Secret History', 'Donna Tartt', 559, 'W'),
   ('Circe', 'Madeline Miller', 393, 'W'),
   ('Klara and the Sun', 'Kazuo Ishiguro', 303, 'W'),
   ('Ways of Seeing', 'John Berger', 176, 'W'),
   ('A Room of One’s Own', 'Virginia Woolf', 112, 'W'),
 ];
+
+// title -> (series, number), applied to new and existing books alike.
+const _series = <String, (String, int)>{
+  'Dune': ('Dune', 1),
+  'Dune Messiah': ('Dune', 2),
+  'Children of Dune': ('Dune', 3),
+  'Harry Potter and the Philosopher’s Stone': ('Harry Potter', 1),
+  'Harry Potter and the Chamber of Secrets': ('Harry Potter', 2),
+  'Harry Potter and the Prisoner of Azkaban': ('Harry Potter', 3),
+  'The Hobbit': ('Middle-earth', 1),
+  'The Fellowship of the Ring': ('Middle-earth', 2),
+  'The Two Towers': ('Middle-earth', 3),
+};
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -127,6 +147,22 @@ Future<void> main() async {
     );
     if (reading) await repo.updatePage(id, pages ~/ 3);
     added++;
+  }
+  // Series are set in a second pass so books added on earlier runs get them too.
+  for (final book in (await repo.load()).books) {
+    final series = _series[book.title];
+    if (series == null || book.seriesName == series.$1) continue;
+    await repo.saveBook(
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      pageCount: book.pageCount,
+      language: book.language,
+      coverPath: book.coverPath,
+      status: book.status,
+      seriesName: series.$1,
+      seriesNumber: series.$2,
+    );
   }
   debugPrint('SEED added=$added covers=$covers');
   await db.close();

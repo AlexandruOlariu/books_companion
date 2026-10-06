@@ -5,7 +5,7 @@
 ```sh
 ./tool/flutterw analyze
 dart format --output=none --set-exit-if-changed lib test integration_test
-./tool/flutterw test                                            # 57 unit and widget tests
+./tool/flutterw test                                            # 85 unit and widget tests
 ./tool/flutterw test integration_test/core_flows_test.dart -d <android-device>
 ./tool/flutterw build apk --debug
 ./tool/check_docs.sh                                            # docs cover the code
@@ -13,7 +13,7 @@ dart format --output=none --set-exit-if-changed lib test integration_test
 
 `dart format` is run with the SDK's `dart` (`flutter format` no longer exists). The integration test installs a test build, so it **wipes the app's data on the device**; re-run `lib/dev_seed.dart` afterwards if a seeded library is wanted.
 
-Latest results (2026-10-06): analyzer clean; format clean; 57 unit and widget tests pass (the suite was run eight times in a row without a flaky failure); the emulator integration test passes; the debug APK and a release APK (debug-signed) build.
+Latest results (2026-10-06): analyzer clean; format clean; 85 unit and widget tests pass; the emulator integration test passes; the debug APK and a release APK (debug-signed) build.
 
 ## Test inventory
 
@@ -29,15 +29,20 @@ Latest results (2026-10-06): analyzer clean; format clean; 57 unit and widget te
 | `test/journal_buckets_test.dart` | 4 | months hold only remembered months in order; a year-only finish is never in a month; years newest first with undated apart; every finish counted exactly once |
 | `test/journal_widget_test.dart` | 4 | All time year rows; a year's month tiles and a month sheet that excludes year-only books; Days explains itself and past finishes do not count; History groups |
 | `test/draft_and_cover_test.dart` | 6 | cover garbage collection rules, draft persistence, expiry, damaged file, blank input |
-| `test/migration_test.dart` | 2 | schema equals the frozen v1 dump; a v1 library survives upgrade |
+| `test/migration_test.dart` | 3 | the frozen v1 schema upgrades to the current one; the current schema equals the frozen v2 dump; a v1 library survives the upgrade with null series |
+| `test/sorting_test.dart` | 10 | title and author keys (articles, diacritics, surname formats), alphabetical and author sort, series grouping and order, unnumbered books, same-named standalone, stable ties, saved-name fallback |
+| `test/series_repository_test.dart` | 6 | series saved, loaded, edited, cleared; number rules; search by series; backup round trip; a pre-series backup restores; an invalid series is rejected |
+| `test/series_and_sort_widget_test.dart` | 7 | one Finished choice; Add another keeps the series and moves the number on; series quick picks; a number without a series is explained; default title sort with series together; author sort and the saved choice; search ranking with the sort breaking ties |
+| `test/preferences_test.dart` | 4 | preferences survive a restart, later writes win, a damaged file is ignored, the memory store |
 | `integration_test/core_flows_test.dart` | 1 | on an Android emulator: Library, Reading, update page, add pin, Journal history, add a past book with year-only precision; asserts the stored value is `2019` and the session count is unchanged |
 
 ## Conventions that avoid false failures
 
 - Layout tests set `tester.view.physicalSize = Size(1080, 2400)` and `devicePixelRatio = 3` (360 x 800 logical) and scroll with `tester.drag`, because the default surface is wider and shorter than a phone.
 - `Eyebrow` upper-cases its text; match `'1 BOOK ON THE SHELF'`, not `'1 book...'`.
-- Books saved in the same millisecond are ordered by random UUID, so which book is first (and shown in the selected-book panel) varies per run. Never tap a status by plain text such as `find.text('Want to read')`; tap the chip (`find.widgetWithText(ChoiceChip, ...)`). This caused one flaky test.
+- Books saved in the same millisecond are ordered by random UUID, so which book is first (and shown in the selected-book panel) varies per run. Never tap a status by plain text such as `find.text('Wishlist')`; tap the chip (`find.widgetWithText(ChoiceChip, ...)`). This caused one flaky test.
 - Generated covers contain the title as text, so `find.text(title)` can match covers as well as list rows; scope searches with `find.descendant` or count rows.
+- To read the order of a list in a test, give it a tall screen (for example 4800 physical px high) and read `BookListTile.book` in order; a short screen builds only the first few rows.
 - Lazy lists (`ListView`, slivers) do not build off-screen children; scroll with `dragUntilVisible` and `ensureVisible` before asserting or tapping.
 - Demo books get new random ids per `createDemoRepository()`; reuse one repository across a simulated restart when a test keys on a book id.
 - The Android emulator's current system image shows a stylus-handwriting tutorial the first time a text field is focused; dismiss it (Cancel) when driving the UI by hand.

@@ -228,6 +228,7 @@ class BookDetailsScreen extends ConsumerWidget {
               Text(
                 '${book.pageCount == null ? 'Page count unknown' : '${book.pageCount} pages'}${book.language == null ? '' : ' · ${book.language}'}',
               ),
+              if (book.seriesLabel != null) Text('Series: ${book.seriesLabel}'),
               TextButton.icon(
                 onPressed: () => context.push('/edit/$id'),
                 icon: const Icon(Icons.edit_outlined, size: 18),

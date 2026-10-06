@@ -27,7 +27,7 @@ Targets: Android 7.0+ (API 24; target 36), iOS 15.0+. The iOS simulator build co
 
 ```
 presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepository  ->  Drift / SQLite
-                                  ^ domain rules live in plain Dart (models.dart, search.dart)
+                                  ^ domain rules live in plain Dart (models.dart, search.dart, sorting.dart)
 ```
 
 - Screens call `LibraryRepository`, never Drift. A remote implementation could be added later behind the same interface; no sync code exists.
@@ -52,24 +52,25 @@ presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepos
 | `libraryProvider` | `FutureProvider<LibrarySnapshot>`; invalidate after writes |
 | `demoProvider` | true in the demo build (labels the app bar) |
 | `draftStoreProvider` | in-memory by default; file-backed in `main.dart` |
+| `preferencesProvider` | in-memory by default; file-backed (`preferences.json` in the support directory) in `main.dart`; holds the shelf's sort choice |
 | `bookLookupProvider` | `OpenLibraryLookup`; tests override with a fake |
 
 ## Data model
 
-Schema version **1**, defined in `lib/core/storage/database.dart` with Drift. Foreign keys are on. Ids are UUID strings. Writes that touch several tables run in a transaction.
+Schema version **2**, defined in `lib/core/storage/database.dart` with Drift. Foreign keys are on. Ids are UUID strings. Writes that touch several tables run in a transaction.
 
 | Table | Columns | Notes |
 | --- | --- | --- |
-| `books` | id, title, created_at, updated_at | catalogue entry |
+| `books` | id, title, series_name?, series_number?, created_at, updated_at | catalogue entry; the series columns were added in version 2 (a number needs a name and is 1 or more) |
 | `authors` | id, name | one author per saved book; orphans are pruned |
 | `book_authors` | book_id (cascade), author_id, position | PK (book_id, author_id) |
 | `editions` | id, book_id (cascade), page_count?, language?, cover_local_path?, metadata_source ('manual' or 'open_library') | the selected edition |
-| `user_books` | id, book_id (cascade), edition_id, status, current_page (default 0), added_at, updated_at | the reader's copy; status is `reading`, `want_to_read`, or `finished` |
+| `user_books` | id, book_id (cascade), edition_id, status, current_page (default 0), added_at, updated_at | the reader's copy; status is `reading`, `want_to_read` (shown as Wishlist), or `finished` |
 | `reading_records` | id, user_book_id (cascade), finished_value?, finished_precision, source, created_at | completion claims; source is `tracked_in_app` or `entered_past` |
 | `reading_sessions` | id, user_book_id (cascade), started_at, start_page?, end_page?, duration_seconds?, created_at | the only source of activity |
 | `pins` | id, user_book_id (cascade), text_content, type, page?, progress_percent?, created_at, updated_at | private notes |
 
-Deliberately absent from the plan's model: subtitle, description, ISBNs, publisher, publication year, cover source URL, ratings, start dates, custom shelves.
+Series is a name and a number on the book, not a separate table, so renaming a series means editing each book. Deliberately absent from the plan's model: subtitle, description, ISBNs, publisher, publication year, cover source URL, ratings, start dates, custom shelves.
 
 ### Dates
 
@@ -94,7 +95,9 @@ Envelope: `{ "format": "reading-library", "version": 1, "data": { "version": 1, 
 
 ## Migrations
 
-`schemaVersion` is 1. `onUpgrade` uses Drift's `stepByStep()` from `lib/core/storage/migrations/schema_versions.dart`; there are no steps yet, so an unknown upgrade throws instead of dropping data. The frozen v1 schema is `drift_schemas/drift_schema_v1.json`, with generated test helpers in `test/generated_migrations/`. `test/migration_test.dart` fails if the schema changes without a version bump and checks a v1 library survives. Procedure for version 2 is in the root `README.md`.
+`schemaVersion` is 2. `onUpgrade` uses Drift's `stepByStep()` from `lib/core/storage/migrations/schema_versions.dart`; the only step is `from1To2` (two nullable columns on `books`, so existing rows keep their data and simply have no series). An unknown upgrade throws instead of dropping data. Frozen schemas are `drift_schemas/drift_schema_v1.json` and `..._v2.json`, with generated test helpers in `test/generated_migrations/`. `test/migration_test.dart` upgrades the frozen v1 schema to the current one, checks the current schema equals the frozen v2 dump, and checks a v1 library survives with null series. The v1 to v2 upgrade also ran for real on an emulator whose database was still version 1. Procedure for the next version is in the root `README.md`.
+
+**Backups across versions:** the backup envelope stays at version 1 because the series fields are additive and optional. A backup made before series existed restores (the keys are absent and read as null); an invalid series (number below 1, number without a name, blank name) is rejected and the existing library is left untouched.
 
 ## Online lookup (`lib/features/book_search`)
 
@@ -132,11 +135,13 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/core/storage/backup_service.dart` | export, inspect, and atomic restore |
 | `lib/core/storage/cover_store.dart` | import, save, and clean up cover files |
 | `lib/core/storage/draft_store.dart` | draft persistence and the form binding |
+| `lib/core/storage/preferences_store.dart` | small device-local settings (memory and file stores) |
 | `lib/core/theme/app_theme.dart` | colour tokens and `roomTheme()` |
 | `lib/core/widgets/book_cover.dart` | cover, generated cover, spine, palette, `bookSeed` |
 | `lib/core/widgets/common.dart` | eyebrow, empty state, snackbar, discard dialog, form sheet |
 | `lib/features/library/domain/models.dart` | domain classes, `PartialDate`, validation, `LibraryRepository` interface |
-| `lib/features/library/domain/search.dart` | diacritic-insensitive multi-word search and ranking |
+| `lib/features/library/domain/search.dart` | diacritic-insensitive multi-word search and ranking (title, author, series) |
+| `lib/features/library/domain/sorting.dart` | title and author sort keys, series grouping, `LibrarySort` |
 | `lib/features/library/data/local_library_repository.dart` | Drift implementation, export and restore validation |
 | `lib/features/library/presentation/library_screen.dart` | Library tab: filters, search, empty states, selection panel |
 | `lib/features/library/presentation/shelf.dart` | shelf packing, rows, planks, keepsake note |

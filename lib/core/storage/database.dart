@@ -7,6 +7,9 @@ part 'database.g.dart';
 class Books extends Table {
   TextColumn get id => text()();
   TextColumn get title => text()();
+  // Added in schema version 2. Both are optional; a number needs a name.
+  TextColumn get seriesName => text().nullable()();
+  IntColumn get seriesNumber => integer().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   @override
@@ -109,14 +112,21 @@ class Pins extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     // Each new schema version needs a frozen dump (`dart run drift_dev schema
     // dump`), a generated step, and a data-preserving case in
     // test/migration_test.dart. A missing step throws and never drops data.
-    onUpgrade: stepByStep(),
+    onUpgrade: stepByStep(
+      // 1 -> 2: optional series name and number on books. Existing rows keep
+      // their data and simply have no series.
+      from1To2: (m, schema) async {
+        await m.addColumn(schema.books, schema.books.seriesName);
+        await m.addColumn(schema.books, schema.books.seriesNumber);
+      },
+    ),
     beforeOpen: (_) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },

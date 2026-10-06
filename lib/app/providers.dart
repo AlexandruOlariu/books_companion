@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/storage/draft_store.dart';
+import '../core/storage/preferences_store.dart';
 import '../features/book_search/data/open_library_lookup.dart';
 import '../features/book_search/domain/book_lookup.dart';
 import '../features/library/domain/models.dart';
@@ -14,3 +15,6 @@ final libraryProvider = FutureProvider<LibrarySnapshot>(
 final demoProvider = Provider<bool>((ref) => false);
 final draftStoreProvider = Provider<DraftStore>((ref) => MemoryDraftStore());
 final bookLookupProvider = Provider<BookLookup>((ref) => OpenLibraryLookup());
+final preferencesProvider = Provider<PreferencesStore>(
+  (ref) => MemoryPreferencesStore(),
+);

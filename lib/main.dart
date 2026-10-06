@@ -14,6 +14,7 @@ import 'app/providers.dart';
 import 'core/storage/cover_store.dart';
 import 'core/storage/database.dart';
 import 'core/storage/draft_store.dart';
+import 'core/storage/preferences_store.dart';
 import 'features/library/data/local_library_repository.dart';
 
 Future<void> main() async {
@@ -34,11 +35,8 @@ Future<void> main() async {
     );
     final repository = LocalLibraryRepository(db);
     await repository.load();
-    final drafts = FileDraftStore(
-      File(
-        p.join((await getApplicationSupportDirectory()).path, 'drafts.json'),
-      ),
-    );
+    final support = await getApplicationSupportDirectory();
+    final drafts = FileDraftStore(File(p.join(support.path, 'drafts.json')));
     // Android may kill a backgrounded process without further callbacks.
     AppLifecycleListener(onInactive: drafts.flush, onPause: drafts.flush);
     // Housekeeping must never delay or break startup.
@@ -53,6 +51,11 @@ Future<void> main() async {
         overrides: [
           repositoryProvider.overrideWithValue(repository),
           draftStoreProvider.overrideWithValue(drafts),
+          preferencesProvider.overrideWithValue(
+            FilePreferencesStore(
+              File(p.join(support.path, 'preferences.json')),
+            ),
+          ),
         ],
         child: const ReadingLibraryApp(),
       ),

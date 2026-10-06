@@ -2,6 +2,15 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-07: series, sorting, one Finished choice
+
+- **One "Finished" choice** when adding a book; "Read in the past" removed (D31).
+- **Series** (name and number) on books, with quick picks and an "Add another" that moves the number on; shown in the selection panel and on the details page; matched by search (D32). First real migration: schema version 2, `from1To2`; verified on an emulator database that was still version 1.
+- **Sorting:** Title (default), Author, or Recently added, remembered between launches; series stay together in order; articles and diacritics ignored (D33). A small preferences store was added.
+- `lib/dev_seed.dart` now creates sample series (Dune, Harry Potter, Middle-earth).
+- **"Want to read" renamed to "Wishlist"** (label only; D34).
+- Tests: 85 unit and widget tests (was 57).
+
 ## 2026-10-06 (late night): first release
 
 - Created the Android upload key (kept in `~/.config/reading-library-signing/`, mirrored into repository secrets), ran the release workflow by hand, then tagged `v0.1.0`: CI built, signed, and published the first GitHub Release (APK plus SHA-256). Verified the published APK's checksum, signer, and version.

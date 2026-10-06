@@ -26,6 +26,28 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _seriesNameMeta = const VerificationMeta(
+    'seriesName',
+  );
+  @override
+  late final GeneratedColumn<String> seriesName = GeneratedColumn<String>(
+    'series_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _seriesNumberMeta = const VerificationMeta(
+    'seriesNumber',
+  );
+  @override
+  late final GeneratedColumn<int> seriesNumber = GeneratedColumn<int>(
+    'series_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -49,7 +71,14 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, title, createdAt, updatedAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    seriesName,
+    seriesNumber,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -74,6 +103,21 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
       );
     } else if (isInserting) {
       context.missing(_titleMeta);
+    }
+    if (data.containsKey('series_name')) {
+      context.handle(
+        _seriesNameMeta,
+        seriesName.isAcceptableOrUnknown(data['series_name']!, _seriesNameMeta),
+      );
+    }
+    if (data.containsKey('series_number')) {
+      context.handle(
+        _seriesNumberMeta,
+        seriesNumber.isAcceptableOrUnknown(
+          data['series_number']!,
+          _seriesNumberMeta,
+        ),
+      );
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -108,6 +152,14 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      seriesName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series_name'],
+      ),
+      seriesNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}series_number'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -128,11 +180,15 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
 class Book extends DataClass implements Insertable<Book> {
   final String id;
   final String title;
+  final String? seriesName;
+  final int? seriesNumber;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Book({
     required this.id,
     required this.title,
+    this.seriesName,
+    this.seriesNumber,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -141,6 +197,12 @@ class Book extends DataClass implements Insertable<Book> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['title'] = Variable<String>(title);
+    if (!nullToAbsent || seriesName != null) {
+      map['series_name'] = Variable<String>(seriesName);
+    }
+    if (!nullToAbsent || seriesNumber != null) {
+      map['series_number'] = Variable<int>(seriesNumber);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -150,6 +212,12 @@ class Book extends DataClass implements Insertable<Book> {
     return BooksCompanion(
       id: Value(id),
       title: Value(title),
+      seriesName: seriesName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seriesName),
+      seriesNumber: seriesNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seriesNumber),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -163,6 +231,8 @@ class Book extends DataClass implements Insertable<Book> {
     return Book(
       id: serializer.fromJson<String>(json['id']),
       title: serializer.fromJson<String>(json['title']),
+      seriesName: serializer.fromJson<String?>(json['seriesName']),
+      seriesNumber: serializer.fromJson<int?>(json['seriesNumber']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -173,6 +243,8 @@ class Book extends DataClass implements Insertable<Book> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'title': serializer.toJson<String>(title),
+      'seriesName': serializer.toJson<String?>(seriesName),
+      'seriesNumber': serializer.toJson<int?>(seriesNumber),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -181,11 +253,15 @@ class Book extends DataClass implements Insertable<Book> {
   Book copyWith({
     String? id,
     String? title,
+    Value<String?> seriesName = const Value.absent(),
+    Value<int?> seriesNumber = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Book(
     id: id ?? this.id,
     title: title ?? this.title,
+    seriesName: seriesName.present ? seriesName.value : this.seriesName,
+    seriesNumber: seriesNumber.present ? seriesNumber.value : this.seriesNumber,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -193,6 +269,12 @@ class Book extends DataClass implements Insertable<Book> {
     return Book(
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
+      seriesName: data.seriesName.present
+          ? data.seriesName.value
+          : this.seriesName,
+      seriesNumber: data.seriesNumber.present
+          ? data.seriesNumber.value
+          : this.seriesNumber,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -203,6 +285,8 @@ class Book extends DataClass implements Insertable<Book> {
     return (StringBuffer('Book(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('seriesName: $seriesName, ')
+          ..write('seriesNumber: $seriesNumber, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -210,13 +294,16 @@ class Book extends DataClass implements Insertable<Book> {
   }
 
   @override
-  int get hashCode => Object.hash(id, title, createdAt, updatedAt);
+  int get hashCode =>
+      Object.hash(id, title, seriesName, seriesNumber, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Book &&
           other.id == this.id &&
           other.title == this.title &&
+          other.seriesName == this.seriesName &&
+          other.seriesNumber == this.seriesNumber &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -224,12 +311,16 @@ class Book extends DataClass implements Insertable<Book> {
 class BooksCompanion extends UpdateCompanion<Book> {
   final Value<String> id;
   final Value<String> title;
+  final Value<String?> seriesName;
+  final Value<int?> seriesNumber;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const BooksCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
+    this.seriesName = const Value.absent(),
+    this.seriesNumber = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -237,6 +328,8 @@ class BooksCompanion extends UpdateCompanion<Book> {
   BooksCompanion.insert({
     required String id,
     required String title,
+    this.seriesName = const Value.absent(),
+    this.seriesNumber = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -247,6 +340,8 @@ class BooksCompanion extends UpdateCompanion<Book> {
   static Insertable<Book> custom({
     Expression<String>? id,
     Expression<String>? title,
+    Expression<String>? seriesName,
+    Expression<int>? seriesNumber,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -254,6 +349,8 @@ class BooksCompanion extends UpdateCompanion<Book> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
+      if (seriesName != null) 'series_name': seriesName,
+      if (seriesNumber != null) 'series_number': seriesNumber,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -263,6 +360,8 @@ class BooksCompanion extends UpdateCompanion<Book> {
   BooksCompanion copyWith({
     Value<String>? id,
     Value<String>? title,
+    Value<String?>? seriesName,
+    Value<int?>? seriesNumber,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -270,6 +369,8 @@ class BooksCompanion extends UpdateCompanion<Book> {
     return BooksCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
+      seriesName: seriesName ?? this.seriesName,
+      seriesNumber: seriesNumber ?? this.seriesNumber,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -284,6 +385,12 @@ class BooksCompanion extends UpdateCompanion<Book> {
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
+    }
+    if (seriesName.present) {
+      map['series_name'] = Variable<String>(seriesName.value);
+    }
+    if (seriesNumber.present) {
+      map['series_number'] = Variable<int>(seriesNumber.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -302,6 +409,8 @@ class BooksCompanion extends UpdateCompanion<Book> {
     return (StringBuffer('BooksCompanion(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('seriesName: $seriesName, ')
+          ..write('seriesNumber: $seriesNumber, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -3202,6 +3311,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$BooksTableCreateCompanionBuilder = BooksCompanion Function({
   required String id,
   required String title,
+  Value<String?> seriesName,
+  Value<int?> seriesNumber,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -3209,6 +3320,8 @@ typedef $$BooksTableCreateCompanionBuilder = BooksCompanion Function({
 typedef $$BooksTableUpdateCompanionBuilder = BooksCompanion Function({
   Value<String> id,
   Value<String> title,
+  Value<String?> seriesName,
+  Value<int?> seriesNumber,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -3289,6 +3402,16 @@ class $$BooksTableFilterComposer extends Composer<_$AppDatabase, $BooksTable> {
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get seriesName => $composableBuilder(
+    column: $table.seriesName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get seriesNumber => $composableBuilder(
+    column: $table.seriesNumber,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3397,6 +3520,16 @@ class $$BooksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get seriesName => $composableBuilder(
+    column: $table.seriesName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get seriesNumber => $composableBuilder(
+    column: $table.seriesNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -3422,6 +3555,16 @@ class $$BooksTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get seriesName => $composableBuilder(
+    column: $table.seriesName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get seriesNumber => $composableBuilder(
+    column: $table.seriesNumber,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -3539,12 +3682,16 @@ class $$BooksTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<String?> seriesName = const Value.absent(),
+                Value<int?> seriesNumber = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BooksCompanion(
                 id: id,
                 title: title,
+                seriesName: seriesName,
+                seriesNumber: seriesNumber,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -3553,12 +3700,16 @@ class $$BooksTableTableManager
               ({
                 required String id,
                 required String title,
+                Value<String?> seriesName = const Value.absent(),
+                Value<int?> seriesNumber = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => BooksCompanion.insert(
                 id: id,
                 title: title,
+                seriesName: seriesName,
+                seriesNumber: seriesNumber,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

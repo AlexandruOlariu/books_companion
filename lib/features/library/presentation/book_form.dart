@@ -11,6 +11,7 @@ import '../../../core/widgets/common.dart';
 import '../../book_search/presentation/book_search_screen.dart';
 import '../../history/presentation/finish_date_field.dart';
 import '../domain/models.dart';
+import '../domain/search.dart';
 
 class BookForm extends ConsumerStatefulWidget {
   final BookEntry? book;
@@ -27,10 +28,13 @@ class _BookFormState extends ConsumerState<BookForm> {
     text: widget.book?.pageCount?.toString(),
   );
   late final language = TextEditingController(text: widget.book?.language);
+  late final series = TextEditingController(text: widget.book?.seriesName);
+  late final seriesNumber = TextEditingController(
+    text: widget.book?.seriesNumber?.toString(),
+  );
   late BookStatus status =
       widget.book?.status ??
       (widget.historical ? BookStatus.finished : BookStatus.wantToRead);
-  late bool historical = widget.historical;
   late String? cover = widget.book?.coverPath;
   PartialDate? finish;
   bool busy = false, dirty = false, allowPop = false, another = false;
@@ -53,10 +57,12 @@ class _BookFormState extends ConsumerState<BookForm> {
         author.text = fields['author'] ?? '';
         pages.text = fields['pages'] ?? '';
         language.text = fields['language'] ?? '';
+        series.text = fields['series'] ?? '';
+        seriesNumber.text = fields['seriesNumber'] ?? '';
         final add = fields['add'];
         if (!widget.historical && add != null) {
-          historical = add == 'past';
-          status = historical
+          // 'past' was an option in an earlier version; it meant Finished.
+          status = add == 'past'
               ? BookStatus.finished
               : BookStatus.values.asNameMap()[add] ?? status;
         }
@@ -72,11 +78,13 @@ class _BookFormState extends ConsumerState<BookForm> {
       'author': author.text,
       'pages': pages.text,
       'language': language.text,
+      'series': series.text,
+      'seriesNumber': seriesNumber.text,
     };
     if (text.values.every((v) => v.trim().isEmpty)) {
       draft?.discard();
     } else {
-      draft?.update({...text, 'add': historical ? 'past' : status.name});
+      draft?.update({...text, 'add': status.name});
     }
   }
 
@@ -114,6 +122,8 @@ class _BookFormState extends ConsumerState<BookForm> {
     author.dispose();
     pages.dispose();
     language.dispose();
+    series.dispose();
+    seriesNumber.dispose();
     super.dispose();
   }
 
@@ -132,6 +142,14 @@ class _BookFormState extends ConsumerState<BookForm> {
           finish == null) {
         throw const FormatException('Choose and confirm when you finished it.');
       }
+      final number = seriesNumber.text.trim().isEmpty
+          ? null
+          : int.tryParse(seriesNumber.text.trim());
+      if (seriesNumber.text.trim().isNotEmpty && number == null) {
+        throw const FormatException(
+          'Enter a whole number for the book number in the series.',
+        );
+      }
       final savedTitle = title.text.trim();
       await ref
           .read(repositoryProvider)
@@ -146,8 +164,12 @@ class _BookFormState extends ConsumerState<BookForm> {
             coverPath: cover,
             status: status,
             finish: finish,
-            historical: historical,
+            // A book added straight as Finished is a remembered finish; books
+            // finished from the Reading tab are recorded as tracked.
+            historical: true,
             metadataSource: metadataSource,
+            seriesName: series.text,
+            seriesNumber: number,
           );
       await draft?.discard();
       ref.invalidate(libraryProvider);
@@ -160,6 +182,12 @@ class _BookFormState extends ConsumerState<BookForm> {
           author.clear();
           pages.clear();
           language.clear();
+          // The next book is probably the next in the same series: keep the
+          // name and move the number on. Everything else starts blank.
+          seriesNumber.text = series.text.trim().isEmpty || number == null
+              ? ''
+              : '${number + 1}';
+          if (series.text.trim().isEmpty) series.clear();
           cover = null;
           metadataSource = 'manual';
           restored = false;
@@ -184,6 +212,51 @@ class _BookFormState extends ConsumerState<BookForm> {
         });
       }
     }
+  }
+
+  /// Quick picks from series already in the library, so a new book joins the
+  /// right one without retyping. Choosing one suggests the next number.
+  List<Widget> _seriesSuggestions() {
+    final books = ref.watch(libraryProvider).value?.books ?? const [];
+    final typed = foldForSearch(series.text);
+    final names = <String>{
+      for (final b in books)
+        if (b.seriesName != null) b.seriesName!,
+    }.toList()..sort((a, b) => foldForSearch(a).compareTo(foldForSearch(b)));
+    final matches = [
+      for (final n in names)
+        if (foldForSearch(n) != typed && foldForSearch(n).contains(typed)) n,
+    ].take(5).toList();
+    if (matches.isEmpty) return const [];
+    return [
+      const SizedBox(height: 8),
+      Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          for (final name in matches)
+            ActionChip(
+              label: Text(name),
+              materialTapTargetSize: MaterialTapTargetSize.padded,
+              onPressed: () {
+                final inSeries = [
+                  for (final b in books)
+                    if (b.seriesName == name && b.seriesNumber != null)
+                      b.seriesNumber!,
+                ];
+                setState(() {
+                  series.text = name;
+                  if (seriesNumber.text.trim().isEmpty && inSeries.isNotEmpty) {
+                    seriesNumber.text =
+                        '${inSeries.reduce((a, b) => a > b ? a : b) + 1}';
+                  }
+                });
+                changed();
+              },
+            ),
+        ],
+      ),
+    ];
   }
 
   @override
@@ -253,6 +326,8 @@ class _BookFormState extends ConsumerState<BookForm> {
                           author.clear();
                           pages.clear();
                           language.clear();
+                          series.clear();
+                          seriesNumber.clear();
                           restored = dirty = false;
                         });
                       },
@@ -281,6 +356,26 @@ class _BookFormState extends ConsumerState<BookForm> {
               onChanged: (_) => changed(),
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(labelText: 'Author'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: series,
+              onChanged: (_) => changed(),
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Series (optional)',
+                hintText: 'e.g. Dune',
+              ),
+            ),
+            ..._seriesSuggestions(),
+            const SizedBox(height: 16),
+            TextField(
+              controller: seriesNumber,
+              onChanged: (_) => changed(),
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Book number in the series (optional)',
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -357,29 +452,22 @@ class _BookFormState extends ConsumerState<BookForm> {
             if (widget.book == null) ...[
               const SizedBox(height: 24),
               DropdownButtonFormField<String>(
-                initialValue: historical ? 'past' : status.name,
+                initialValue: status.name,
                 decoration: const InputDecoration(labelText: 'Add to'),
                 items: const [
                   DropdownMenuItem(
                     value: 'wantToRead',
-                    child: Text('Want to read'),
+                    child: Text('Wishlist'),
                   ),
                   DropdownMenuItem(
                     value: 'reading',
                     child: Text('Reading now'),
                   ),
                   DropdownMenuItem(value: 'finished', child: Text('Finished')),
-                  DropdownMenuItem(
-                    value: 'past',
-                    child: Text('Read in the past'),
-                  ),
                 ],
                 onChanged: (v) {
                   setState(() {
-                    historical = v == 'past';
-                    status = historical
-                        ? BookStatus.finished
-                        : BookStatus.values.byName(v!);
+                    status = BookStatus.values.byName(v!);
                     finish = null;
                     dateKey++;
                   });

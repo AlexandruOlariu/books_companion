@@ -5,7 +5,8 @@ enum BookStatus { reading, wantToRead, finished }
 extension BookStatusLabel on BookStatus {
   String get label => switch (this) {
     BookStatus.reading => 'Reading',
-    BookStatus.wantToRead => 'Want to read',
+    // Stored as `want_to_read`; shown as Wishlist.
+    BookStatus.wantToRead => 'Wishlist',
     BookStatus.finished => 'Finished',
   };
 }
@@ -58,8 +59,8 @@ class PartialDate {
 
 class BookEntry {
   final String id, bookId, editionId, title, author;
-  final String? language, coverPath;
-  final int? pageCount;
+  final String? language, coverPath, seriesName;
+  final int? pageCount, seriesNumber;
   final int currentPage;
   final BookStatus status;
   const BookEntry({
@@ -72,8 +73,17 @@ class BookEntry {
     this.language,
     this.coverPath,
     this.pageCount,
+    this.seriesName,
+    this.seriesNumber,
     this.currentPage = 0,
   });
+
+  /// "Dune, book 2" when the book belongs to a series; null otherwise.
+  String? get seriesLabel => seriesName == null
+      ? null
+      : seriesNumber == null
+      ? seriesName
+      : '$seriesName, book $seriesNumber';
   double? get progress =>
       pageCount == null ? null : (currentPage / pageCount!).clamp(0, 1);
   String get progressLabel => pageCount == null
@@ -191,6 +201,8 @@ abstract class LibraryRepository {
     PartialDate? finish,
     bool historical = false,
     String metadataSource = 'manual',
+    String? seriesName,
+    int? seriesNumber,
   });
   Future<Set<String>> coverPaths();
   Future<void> updatePage(String id, int page);

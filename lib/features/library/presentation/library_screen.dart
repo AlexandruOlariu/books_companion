@@ -1,32 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/book_cover.dart';
 import '../../../core/widgets/common.dart';
 import '../domain/models.dart';
 import '../domain/search.dart';
+import '../domain/sorting.dart';
 import 'keepsakes.dart';
 import 'shelf.dart';
 
-class LibraryScreen extends StatefulWidget {
+class LibraryScreen extends ConsumerStatefulWidget {
   final LibrarySnapshot data;
   const LibraryScreen({super.key, required this.data});
   @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
+  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen> {
+class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+  static const _sortKey = 'librarySort';
+  LibrarySort sort = LibrarySort.title;
   BookStatus? status;
   int? year;
   bool list = false;
   String search = '';
   final searchField = TextEditingController();
   String? selectedId;
+
+  @override
+  void initState() {
+    super.initState();
+    // The reader's last choice is remembered between launches.
+    ref.read(preferencesProvider).read(_sortKey).then((saved) {
+      if (saved != null && mounted) {
+        setState(() => sort = LibrarySort.fromName(saved));
+      }
+    });
+  }
+
   @override
   void dispose() {
     searchField.dispose();
     super.dispose();
+  }
+
+  Future<void> _chooseSort() async {
+    final picked = await showModalBottomSheet<LibrarySort>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+              child: Text(
+                'Sort the shelf',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            for (final option in LibrarySort.values)
+              ListTile(
+                minVerticalPadding: 12,
+                leading: Icon(
+                  option == sort
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                  color: option == sort ? RoomColors.forest : RoomColors.muted,
+                ),
+                title: Text(option.label),
+                subtitle: Text(option.description),
+                selected: option == sort,
+                onTap: () => Navigator.pop(context, option),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      sort = picked;
+      selectedId = null;
+    });
+    await ref.read(preferencesProvider).write(_sortKey, picked.name);
   }
 
   Widget _emptyState(LibrarySnapshot data, int hidden) {
@@ -101,7 +161,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
           (status == null || b.status == status) &&
           (!showYears || year == null || finishedIds.contains(b.id)),
     );
-    final books = searchBooks(inFilter, search);
+    // Sort first; a typed search then ranks by relevance, and equally good
+    // matches keep the chosen sort order.
+    final books = searchBooks(sortBooks(inFilter, sort), search);
     // Matches the status/year filter is hiding, so an empty result can say so.
     final hidden = search.trim().isEmpty
         ? 0
@@ -230,11 +292,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     }),
                   ),
                   const SizedBox(height: 16),
+                  Eyebrow(
+                    '${books.length} ${books.length == 1 ? 'book' : 'books'} on the shelf',
+                  ),
                   Row(
                     children: [
                       Expanded(
-                        child: Eyebrow(
-                          '${books.length} ${books.length == 1 ? 'book' : 'books'} on the shelf',
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: _chooseSort,
+                            icon: const Icon(Icons.sort, size: 18),
+                            label: Text('Sort: ${sort.shortLabel}'),
+                          ),
                         ),
                       ),
                       TextButton.icon(
@@ -355,6 +425,16 @@ class _Selection extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: RoomColors.muted),
                   ),
+                  if (book.seriesLabel != null)
+                    Text(
+                      book.seriesLabel!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: RoomColors.forest,
+                        fontSize: 13,
+                      ),
+                    ),
                   const SizedBox(height: 6),
                   Text(
                     book.status == BookStatus.reading

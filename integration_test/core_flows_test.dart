@@ -70,7 +70,7 @@ void main() {
     await tester.ensureVisible(addTo);
     await tester.tap(addTo);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Read in the past').last);
+    await tester.tap(find.text('Finished').last);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Date precision'));
     await tester.tap(find.text('Date precision'));

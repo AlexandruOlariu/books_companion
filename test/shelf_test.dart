@@ -175,8 +175,8 @@ void main() {
       );
       await tester.drag(find.byType(CustomScrollView), const Offset(0, 800));
       await tester.pumpAndSettle();
-      // The chip, not the selected-book panel, which can also say "Want to read".
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Want to read'));
+      // The chip, not the selected-book panel, which can also say "Wishlist".
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Wishlist'));
       await tester.pumpAndSettle();
       await scrollDown(tester);
       expect(find.bySemanticsLabel(RegExp('Shelf keepsake')), findsNothing);

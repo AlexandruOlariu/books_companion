@@ -12,6 +12,7 @@ class LocalLibraryRepository implements LibraryRepository {
   Future<LibrarySnapshot> load() async {
     final rows = await db.customSelect('''
       SELECT u.id, u.book_id, u.edition_id, u.status, u.current_page, b.title,
+        b.series_name, b.series_number,
         e.page_count, e.language, e.cover_local_path,
         (SELECT group_concat(name, ', ') FROM
           (SELECT a.name FROM authors a JOIN book_authors ba ON ba.author_id=a.id
@@ -31,6 +32,8 @@ class LocalLibraryRepository implements LibraryRepository {
               status: BookStatus.values.byName(r.read('status')),
               currentPage: r.read('current_page'),
               pageCount: r.readNullable('page_count'),
+              seriesName: r.readNullable('series_name'),
+              seriesNumber: r.readNullable('series_number'),
               language: r.readNullable('language'),
               coverPath: r.readNullable('cover_local_path'),
             ),
@@ -98,9 +101,20 @@ class LocalLibraryRepository implements LibraryRepository {
     PartialDate? finish,
     bool historical = false,
     String metadataSource = 'manual',
+    String? seriesName,
+    int? seriesNumber,
   }) async {
     if (title.trim().isEmpty || author.trim().isEmpty) {
       throw const FormatException('Enter a title and author.');
+    }
+    final series = seriesName?.trim().isEmpty ?? true
+        ? null
+        : seriesName!.trim();
+    if (seriesNumber != null && series == null) {
+      throw const FormatException('Enter the series name for this number.');
+    }
+    if (seriesNumber != null && seriesNumber <= 0) {
+      throw const FormatException('The series number must be 1 or more.');
     }
     if (pageCount != null && pageCount <= 0) {
       throw const FormatException('Page count must be greater than zero.');
@@ -145,6 +159,8 @@ class LocalLibraryRepository implements LibraryRepository {
             BooksCompanion.insert(
               id: bookId,
               title: title.trim(),
+              seriesName: Value(series),
+              seriesNumber: Value(seriesNumber),
               createdAt: originalBook?.createdAt ?? now,
               updatedAt: now,
             ),
@@ -382,6 +398,15 @@ class LocalLibraryRepository implements LibraryRepository {
     if (books.any((b) => b.title.trim().isEmpty) ||
         authors.any((a) => a.name.trim().isEmpty)) {
       throw const FormatException('Empty title or author.');
+    }
+    // Series fields are optional (older backups have none), but when present
+    // they must make sense.
+    for (final b in books) {
+      final name = b.seriesName;
+      if ((name != null && name.trim().isEmpty) ||
+          (b.seriesNumber != null && (b.seriesNumber! <= 0 || name == null))) {
+        throw const FormatException('Invalid series.');
+      }
     }
     for (final e in editions) {
       if (e.pageCount != null && e.pageCount! <= 0) {

@@ -72,3 +72,8 @@ See the final verification notes below for execution results. Tests cover partia
 - The release workflow ran by hand (build passed in 5 minutes; publishing correctly skipped), then the tag `v0.1.0` built in 6 minutes and published the release. The downloaded APK matched `SHA256SUMS.txt`, was signed by the upload key (`CN=Reading Library, OU=Upload key`), had package `app.readingroom.reading_library`, version 0.1.0 (code 2), and requested only `INTERNET`. Observed through the GitHub CLI; the APK was not installed on a phone.
 - The release is not a pre-release because the signing secrets were set. The repository is private.
 
+## Executed checks — series and sorting pass (7 October 2026)
+
+- 85 unit and widget tests pass. The v1 to v2 migration ran on an emulator database that was still at version 1 (the app opened, kept all books, and the seed added more), in addition to the migration tests.
+- Reviewed on the emulator: the alphabetical shelf (articles ignored), the Dune series together in order, the Sort sheet, and the add form with series quick picks. Not yet checked on a real phone, at maximum text size, or with an iOS device. The Android integration test was updated for the single Finished choice and passes on the emulator.
+

@@ -197,28 +197,30 @@ void main() {
       expect((await repo.load()).books.single.title, 'A book');
     },
   );
-  test('database survives close and reopen at schema version 1', () async {
-    final temp = await Directory.systemTemp.createTemp('reading-db-');
-    addTearDown(() => temp.delete(recursive: true));
-    final file = File('${temp.path}/library.sqlite');
-    var diskDb = AppDatabase(NativeDatabase(file));
-    await LocalLibraryRepository(diskDb).saveBook(
-      title: 'Persistent',
-      author: 'Reader',
-      status: BookStatus.wantToRead,
-    );
-    await diskDb.close();
-    diskDb = AppDatabase(NativeDatabase(file));
-    expect(
-      (await LocalLibraryRepository(diskDb).load()).books.single.title,
-      'Persistent',
-    );
-    expect(
-      (await diskDb.customSelect('PRAGMA user_version').getSingle()).read<int>(
-        'user_version',
-      ),
-      1,
-    );
-    await diskDb.close();
-  });
+  test(
+    'database survives close and reopen at the current schema version',
+    () async {
+      final temp = await Directory.systemTemp.createTemp('reading-db-');
+      addTearDown(() => temp.delete(recursive: true));
+      final file = File('${temp.path}/library.sqlite');
+      var diskDb = AppDatabase(NativeDatabase(file));
+      await LocalLibraryRepository(diskDb).saveBook(
+        title: 'Persistent',
+        author: 'Reader',
+        status: BookStatus.wantToRead,
+      );
+      await diskDb.close();
+      diskDb = AppDatabase(NativeDatabase(file));
+      expect(
+        (await LocalLibraryRepository(diskDb).load()).books.single.title,
+        'Persistent',
+      );
+      expect(
+        (await diskDb.customSelect('PRAGMA user_version').getSingle())
+            .read<int>('user_version'),
+        2,
+      );
+      await diskDb.close();
+    },
+  );
 }
