@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/storage/backup_service.dart';
@@ -119,7 +120,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: 20),
         const Text(
-          'Your library, reading history, and private pins are stored on this device. No account, no cloud, no tracking.',
+          'Your library, reading history, and private pins are stored on this device. No account is needed, and there is no tracking.',
         ),
         const SizedBox(height: 32),
         Text(
@@ -152,6 +153,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             padding: const EdgeInsets.only(top: 20),
             child: Text(message!),
           ),
+        if (!ref.watch(demoProvider)) ...[
+          const SizedBox(height: 32),
+          Text(
+            'Read with friends',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Optional. Make an account to find friends and share a list of the books you have read. Your notes, pins, and reading sessions always stay on this device.',
+          ),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/friends'),
+            icon: const Icon(Icons.people_outline),
+            label: const Text('Friends and sharing'),
+          ),
+        ],
         const SizedBox(height: 40),
         const Text('Reading Library · 0.1.0'),
         TextButton(

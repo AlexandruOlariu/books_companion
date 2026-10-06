@@ -1,6 +1,6 @@
 # Reading Library
 
-A Flutter reading journal for Android and iOS. A warm-paper bookshelf, private page pins, and an honest distinction between remembered reading history and logged activity. Opens to an empty library; no account, analytics, or network connection is required. A small friends server lives in `server/` (see `docs/backend.md`); the app does not use it yet.
+A Flutter reading journal for Android and iOS. A warm-paper bookshelf, private page pins, and an honest distinction between remembered reading history and logged activity. Opens to an empty library; no account, analytics, or network connection is required. An optional Friends feature (accounts, friends, a published shelf) uses a small server in `server/` (see `docs/backend.md`).
 
 ## Run
 

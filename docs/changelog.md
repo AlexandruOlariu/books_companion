@@ -2,11 +2,20 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-07: friends in the app
+
+- **Friends (optional)** in Settings: sign in or create an account, publish a shelf for friends (with a confirmation of exactly what is sent), friend requests, find by exact username or from contacts, be found by phone (opt-in), block, sign out, delete the account (D36). A friend's shelf is read-only and separate from the reader's own library.
+- New: `lib/features/friends/`, `lib/core/storage/session_store.dart`, four providers, routes `/friends` and `/friends/:id`. New plugins `flutter_secure_storage` and `flutter_contacts`; Android `READ_CONTACTS` and iOS `NSContactsUsageDescription`.
+- **Privacy change:** `privacy-policy.md` and `store-privacy.md` now describe accounts, shared data, contacts, and deletion. Still to do before a store release: fill the policy's bracketed items and add the web account-deletion page Google Play requires.
+- The nginx route for `https://ai.duk-tech.com/books-api/` was installed (`backend.md`).
+- Fixed in the new code: the delete-account dialog disposed its controller too early.
+- Tests: 135 unit and widget tests (was 85). Verified on the emulator against the live server (see `testing.md`).
+
 ## 2026-10-07: backend for friends (server only)
 
 - **New `server/`:** Python (FastAPI) and PostgreSQL service with email and password accounts, friend requests and blocks, username lookup, phone-number contact matching (opt-in, hashed with a pepper), and a published shelf that friends can read (D35, `backend.md`). Runs with Docker Compose on `127.0.0.1:8300`; public path `https://ai.duk-tech.com/books-api/` via an nginx include (`server/deploy/`), which needs a one-time `sudo` step.
 - 46 server tests against a real Postgres, run by a new `server-tests` CI job.
-- **The app does not use it yet.** Nothing in `lib/` changed, so the privacy policy and store declarations are unchanged; `backend.md` lists what the client change must update.
+- At the time of this entry the app did not use it yet; the client followed the same day (entry above).
 
 ## 2026-10-07: series, sorting, one Finished choice
 

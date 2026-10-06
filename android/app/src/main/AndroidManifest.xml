@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Used only for optional Open Library search, when the reader taps Search. -->
+    <!-- Optional Open Library search (when the reader taps Search) and the optional
+         friends server (only after the reader signs in and acts). -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Only for "Find friends from contacts": asked for when the reader taps it,
+         read-only, phone numbers only. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <application
         android:label="Reading Library"
         android:allowBackup="false"

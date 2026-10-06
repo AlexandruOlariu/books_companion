@@ -72,10 +72,17 @@ See the final verification notes below for execution results. Tests cover partia
 - The release workflow ran by hand (build passed in 5 minutes; publishing correctly skipped), then the tag `v0.1.0` built in 6 minutes and published the release. The downloaded APK matched `SHA256SUMS.txt`, was signed by the upload key (`CN=Reading Library, OU=Upload key`), had package `app.readingroom.reading_library`, version 0.1.0 (code 2), and requested only `INTERNET`. Observed through the GitHub CLI; the APK was not installed on a phone.
 - The release is not a pre-release because the signing secrets were set. The repository is private.
 
+## Executed checks — friends client pass (7 October 2026)
+
+- 135 Flutter tests pass (50 new), analyzer and format clean, the debug APK builds with the two new native plugins, and the merged manifest requests only `INTERNET` and `READ_CONTACTS` (plus Flutter's internal receiver permission).
+- Driven on the emulator against the live server: sign-in panel, create account, share dialog, publish (51 books; the stored payload had only the allowed fields), delete account (server left empty). The nginx route was installed and `https://ai.duk-tech.com/books-api/healthz` answers from outside.
+- **A real bug was found by the tests and fixed:** the delete-account dialog disposed its text controller while still animating out. It now owns its controller.
+- **Not verified:** the contacts permission prompt and a real contact match (no contacts or second device on the emulator); a friend request between two real phones; any iOS run (the iOS build and the Keychain storage have never been run); behaviour with a flaky connection beyond the unit tests; TalkBack for the new screens. The 200% text check ran in widget tests only. Pumping the whole app in demo mode at 360 px width reported a 9 px horizontal overflow (probably the `READING ROOM · DEMO` top-bar title; not investigated, and not in code this change touched).
+
 ## Executed checks — backend pass (7 October 2026)
 
 - 46 server tests pass against PostgreSQL 17 (a throwaway container). The Docker image was built and the stack started with Compose; a scripted run against `127.0.0.1:8300` registered two users, sent and accepted a friend request, published a shelf, read it as the friend, then deleted both accounts (the `users` table ended empty). The API port was confirmed unreachable from the LAN address.
-- **Not done:** the nginx include has to be installed with `server/deploy/install-nginx.sh` (needs `sudo`), so `https://ai.duk-tech.com/books-api/` was not tested from outside until that is run. Nothing was tested from a phone, and the Flutter app has no client for the server. Phone matching has only been tested with the Romanian numbering plan and E.164 input. No load test. Phone and email are unverified (see `backend.md`, known gaps).
+- The nginx include was installed with `server/deploy/install-nginx.sh` and `https://ai.duk-tech.com/books-api/healthz` answered 200 from outside, with `/docs` 404 and `/me` without a token 401. nginx's `-t` printed warnings about a second `server_name ai.duk-tech.com` in `sites-enabled/default` (not introduced by this change; the first definition wins). Phone matching has only been tested with the Romanian numbering plan and E.164 input. No load test. Phone and email are unverified (see `backend.md`, known gaps).
 
 ## Executed checks — series and sorting pass (7 October 2026)
 

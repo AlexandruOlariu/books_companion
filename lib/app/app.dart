@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_theme.dart';
 import '../features/book_details/presentation/book_details_screen.dart';
+import '../features/friends/presentation/friend_shelf_screen.dart';
+import '../features/friends/presentation/friends_screen.dart';
 import '../features/history/presentation/journal_screen.dart';
 import '../features/library/presentation/book_form.dart';
 import '../features/library/presentation/library_screen.dart';
@@ -73,6 +75,14 @@ class _ReadingLibraryAppState extends State<ReadingLibraryApp> {
         ),
       ),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+      GoRoute(path: '/friends', builder: (_, _) => const FriendsScreen()),
+      GoRoute(
+        path: '/friends/:id',
+        builder: (_, state) => FriendShelfScreen(
+          id: state.pathParameters['id']!,
+          name: state.uri.queryParameters['name'] ?? 'Friend',
+        ),
+      ),
     ],
   );
   @override

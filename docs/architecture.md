@@ -16,10 +16,12 @@ Flutter 3.47.6 / Dart 3.13.5. Direct dependencies are pinned in `pubspec.yaml`; 
 | image_picker | 1.2.4 | choosing a cover |
 | file_picker | 13.1.0 | saving and choosing backup files |
 | share_plus (+ cross_file) | 13.3.1 / 0.3.5+5 | native share sheet |
+| flutter_secure_storage | 11.2.0 | the optional friends sign-in tokens (Keychain on iOS, an encrypted store on Android) |
+| flutter_contacts | 2.6.0 | read-only phone numbers for "Find friends from contacts"; asked for only when the reader taps it |
 | intl | 0.20.3 | date formatting |
 | dev: drift_dev, build_runner, flutter_lints | 2.35.1, 2.16.1, 6.0.0 | codegen, migration tooling, lints |
 
-Fonts are bundled (DM Sans, Literata, both OFL) with their licences registered at startup. There is no Freezed, json_serializable, Dio, or cached_network_image despite the plan: domain models are small hand-written classes, and the optional online lookup uses `dart:io` directly.
+Fonts are bundled (DM Sans, Literata, both OFL) with their licences registered at startup. There is no Freezed, json_serializable, Dio, or cached_network_image despite the plan: domain models are small hand-written classes, and the optional online lookup and the friends client use `dart:io` directly.
 
 Targets: Android 7.0+ (API 24; target 36), iOS 15.0+. The iOS simulator build compiles in CI on macOS (first green run 2026-10-06, commit `2f53858`, as shown in the GitHub UI). It has never been compiled on this Linux host, and no iOS simulator or device run has happened.
 
@@ -30,7 +32,7 @@ presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepos
                                   ^ domain rules live in plain Dart (models.dart, search.dart, sorting.dart)
 ```
 
-- Screens call `LibraryRepository`, never Drift. A remote implementation could be added later behind the same interface; no sync code exists. A separate server (`server/`, see `backend.md`) exists for friends and published shelves, but nothing in `lib/` calls it yet.
+- Screens call `LibraryRepository`, never Drift. A remote implementation could be added later behind the same interface; no sync code exists. The optional friends feature (accounts, friends, a published shelf) talks to a separate server (`server/`, see `backend.md`) through `FriendsApi`; it is independent of the library layer and never reads Drift. See "Friends client" below.
 - Domain rules (date precision, validation, search ranking, shelf packing, keepsake thresholds) are plain Dart functions so tests can cover them without widgets.
 - `LibraryRepository.load()` returns an immutable `LibrarySnapshot` (books, completions, sessions, pins) that the UI reads; writes invalidate `libraryProvider`.
 
@@ -54,6 +56,12 @@ presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepos
 | `draftStoreProvider` | in-memory by default; file-backed in `main.dart` |
 | `preferencesProvider` | in-memory by default; file-backed (`preferences.json` in the support directory) in `main.dart`; holds the shelf's sort choice |
 | `bookLookupProvider` | `OpenLibraryLookup`; tests override with a fake |
+| `sessionStoreProvider` | in-memory by default; `SecureSessionStore` (secure storage) in `main.dart`; holds the friends sign-in tokens |
+| `friendsApiProvider` | `HttpFriendsApi` on the session store; tests override with a fake |
+| `contactsSourceProvider` | `DeviceContactsSource` (permission and numbers); tests override with a fake |
+| `regionProvider` | the device's country code (for reading phone numbers written without a country code); tests override |
+
+The friends screens add their own data providers in `lib/features/friends/presentation/friends_providers.dart` (`accountProvider`, `friendsProvider`, `friendRequestsProvider`, `blockedProvider`, `mySharedShelfProvider`, `friendShelfProvider`), invalidated together by `resetFriendsData` on sign-in, sign-out, and account deletion, and an action wrapper `runFriends` that turns failures into messages and a lost session into the sign-in panel.
 
 ## Data model
 
@@ -107,14 +115,27 @@ Envelope: `{ "format": "reading-library", "version": 1, "data": { "version": 1, 
 
 `packShelves(books, width, keepsakes)` returns rows of `BookSlot` and `KeepsakeSlot` no wider than the width, with keepsakes spaced evenly. `SliverShelf` builds rows lazily in a sliver list so a large library stays cheap. Slot sizes derive from `bookSeed(title)` (a stable FNV-1a hash) and page count. Details in `design-system.md`.
 
+## Friends client (`lib/features/friends/`)
+
+Optional and entirely separate from the library. Nothing here runs until the reader opens Friends and acts, and the app never reads or writes the library through it except to build what the reader chose to publish.
+
+- `FriendsApi` is the interface; `HttpFriendsApi` implements it against `https://ai.duk-tech.com/books-api` (`HttpFriendsApi.defaultOrigin`; injectable for tests). 8 s connect and 20 s response timeouts, an 8 MB response cap, a `ReadingLibrary/0.1` user agent.
+- **Sessions:** the access and refresh tokens live in `SessionStore` (secure storage in production), never in `preferences.json` and never in a backup. A 401 triggers one refresh (shared by concurrent calls, `_refreshing`) and a retry. Only a refusal by the server ends the session; a network failure, timeout, or server error never signs the reader out.
+- **Errors:** every failure becomes a `FriendsException` with a message that is safe to show (the server's own `detail` text when it has one, a generic text for 429 or 5xx, the first validation error named by field for 422). `signedOut` marks a lost session.
+- `sharedBooksFrom(LibrarySnapshot)` is the only code that decides what leaves the device: `id`, `title`, `author`, `status`, and one finish per completion with its precision. `SharedBook` has no field for notes, pins, sessions, progress, covers, or series, so leaving them out does not depend on remembering to. A finished book with no recorded finish is sent as `unknown`; a wishlist book carries none; titles and authors are clipped to 300 characters.
+- **Publishing is explicit:** a button, a confirmation that states what is sent, and a replace of the previous snapshot. There is no background sync; friends see the shelf as of the last publish.
+- **Contacts:** `DeviceContactsSource` requests the read permission only after the reader confirms a dialog, reads phone numbers only (no names, emails, or photos), sends at most 3000 numbers in batches of 1000 with the device region, and keeps nothing. People already friends or with a pending request are not offered again.
+- A friend's shelf is shown from `friendShelfProvider` and is never merged into `LibrarySnapshot`, so it cannot affect statistics, the Journal, or keepsakes.
+- The Settings entry is hidden in the demo build.
+
 ## Drafts (`lib/core/storage/draft_store.dart`)
 
 `DraftStore` (`load`, `save`, `clear`) with `MemoryDraftStore` and `FileDraftStore` (debounced writes, atomic rename, 30-day expiry, damaged file ignored). `DraftBinding` ties one form to one key and clears the draft when all text is blank. Keys: `book:new` and `action:<userBookId>:<page|session|pin>`.
 
 ## Platform configuration
 
-- **Android:** `applicationId` `app.readingroom.reading_library` (a placeholder; change with `tool/set_bundle_id.sh`), Kotlin namespace unchanged. `allowBackup=false`. The main manifest requests only `INTERNET` (optional search). Release signing reads `android/key.properties`; without it a release build fails unless `READING_LIBRARY_DEBUG_SIGNING=1` is set for a local, non-uploadable build.
-- **iOS:** bundle id `app.readingroom.readingLibrary` (placeholder), `NSPhotoLibraryUsageDescription` set, automatic signing with no team committed. No app-level privacy manifest yet.
+- **Android:** `applicationId` `app.readingroom.reading_library` (a placeholder; change with `tool/set_bundle_id.sh`), Kotlin namespace unchanged. `allowBackup=false`. The main manifest requests `INTERNET` (optional search, and the optional friends server) and `READ_CONTACTS` (only used by "Find friends from contacts"; read-only; checked in the built APK's merged manifest). Nothing else is requested. Release signing reads `android/key.properties`; without it a release build fails unless `READING_LIBRARY_DEBUG_SIGNING=1` is set for a local, non-uploadable build.
+- **iOS:** bundle id `app.readingroom.readingLibrary` (placeholder), `NSPhotoLibraryUsageDescription` and `NSContactsUsageDescription` set, automatic signing with no team committed. No app-level privacy manifest yet.
 - **CI** (`.github/workflows/checks.yml`): format check, analyze, tests, `tool/check_docs.sh`, debug APK on Linux; unsigned simulator build on macOS.
 - **Release CI** (`.github/workflows/release.yml`): on a `v*` tag, the same checks, then a release APK published as a GitHub Release (signed when the `ANDROID_KEYSTORE_*` secrets exist, otherwise debug-signed and marked pre-release). Helpers: `tool/release_version.sh` (tag must match `pubspec.yaml`), `tool/ci_prepare_signing.sh` (secrets to `android/key.properties`). See `release.md`.
 
@@ -136,6 +157,7 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/core/storage/cover_store.dart` | import, save, and clean up cover files |
 | `lib/core/storage/draft_store.dart` | draft persistence and the form binding |
 | `lib/core/storage/preferences_store.dart` | small device-local settings (memory and file stores) |
+| `lib/core/storage/session_store.dart` | friends sign-in tokens: memory store and secure-storage store |
 | `lib/core/theme/app_theme.dart` | colour tokens and `roomTheme()` |
 | `lib/core/widgets/book_cover.dart` | cover, generated cover, spine, palette, `bookSeed` |
 | `lib/core/widgets/common.dart` | eyebrow, empty state, snackbar, discard dialog, form sheet |
@@ -159,5 +181,14 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/features/book_details/presentation/book_details_screen.dart` | book details, pins, history, remove |
 | `lib/features/settings/presentation/settings_screen.dart` | export, restore, licences |
 | `lib/features/sharing/data/share_image.dart` | on-device share images |
+| `lib/features/friends/domain/friends_models.dart` | `Person`, `Account`, `SharedBook`, `SharedShelf`, `FriendsException`, the `FriendsApi` interface, and `sharedBooksFrom` (what is published) |
+| `lib/features/friends/data/http_friends_api.dart` | `FriendsApi` over HTTPS with `dart:io`: tokens, refresh, error messages |
+| `lib/features/friends/data/contacts_source.dart` | contacts permission and phone numbers (numbers only) |
+| `lib/features/friends/presentation/friends_providers.dart` | friends data providers, `resetFriendsData`, `runFriends` |
+| `lib/features/friends/presentation/friends_screen.dart` | `/friends`: account, shelf sharing, requests, friends, phone, blocked, sign out, delete account |
+| `lib/features/friends/presentation/account_panel.dart` | sign-in and create-account panel |
+| `lib/features/friends/presentation/find_friends.dart` | find by username and from contacts |
+| `lib/features/friends/presentation/friend_shelf_screen.dart` | `/friends/:id`: a friend's read-only shelf, remove, block |
+| `lib/features/friends/presentation/person_row.dart` | a person with their actions |
 
 Other tooling: `tool/flutterw` (finds the Flutter SDK), `tool/set_bundle_id.sh`, `tool/check_docs.sh`, `tool/docs_stop_hook.sh`, `tool/release_version.sh`, `tool/ci_prepare_signing.sh`.

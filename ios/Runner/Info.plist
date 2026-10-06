@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSContactsUsageDescription</key>
+	<string>Only when you choose "Find friends from contacts": your contacts' phone numbers are checked against people who chose to be found, and are not kept.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choose a cover image to keep with your book on this device.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>

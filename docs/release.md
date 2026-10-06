@@ -41,8 +41,16 @@ test only, `READING_LIBRARY_DEBUG_SIGNING=1 flutter build apk --release` signs
 with the debug key; Google Play rejects those builds.
 
 Verified here: a release APK built with a throwaway key is signed by that key
-and requests only the `INTERNET` permission (used for optional Open Library
-search).
+and requested only the `INTERNET` permission (used for optional Open Library
+search). That check predates the friends feature: the debug build now also
+requests `READ_CONTACTS` (checked in its merged manifest); a release build has
+not been re-inspected since.
+
+Before the first release that includes Friends: update the store listings per
+`store-privacy.md` (data safety and app privacy answers change), publish the
+privacy policy with the friends section filled in, add the web account-deletion
+page Google Play requires, and make sure the server is running and backed up
+(`backend.md`). The server address is `HttpFriendsApi.defaultOrigin`.
 
 ## 3. iOS signing (on a Mac)
 

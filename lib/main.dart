@@ -15,6 +15,7 @@ import 'core/storage/cover_store.dart';
 import 'core/storage/database.dart';
 import 'core/storage/draft_store.dart';
 import 'core/storage/preferences_store.dart';
+import 'core/storage/session_store.dart';
 import 'features/library/data/local_library_repository.dart';
 
 Future<void> main() async {
@@ -51,6 +52,7 @@ Future<void> main() async {
         overrides: [
           repositoryProvider.overrideWithValue(repository),
           draftStoreProvider.overrideWithValue(drafts),
+          sessionStoreProvider.overrideWithValue(SecureSessionStore()),
           preferencesProvider.overrideWithValue(
             FilePreferencesStore(
               File(p.join(support.path, 'preferences.json')),

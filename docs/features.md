@@ -2,7 +2,7 @@
 
 This is the behavioural specification of the working POC, written from the code. It describes what exists, not what was planned (see `product-plan.md` for the original plan and `decisions.md` for where and why the build departs from it). Exact user-facing strings are quoted where tests or the design depend on them.
 
-**Product in one line:** a private, local-first reading journal for Android and iOS. No account, analytics, or required network (a friends server exists but the app does not use it yet; see `backend.md`). The reader records what they know and leaves unknown details unknown.
+**Product in one line:** a private, local-first reading journal for Android and iOS. No account, analytics, or required network. An optional account lets the reader find friends and share a list of what they have read (see Friends, and `backend.md` for the server). The reader records what they know and leaves unknown details unknown.
 
 ## Honesty rules (they shape every feature)
 
@@ -18,9 +18,9 @@ This is the behavioural specification of the working POC, written from the code.
 
 ## Navigation
 
-Three labelled bottom destinations: **Library**, **Reading**, **Journal**. A settings button (tune icon) sits in the top bar. A floating labelled **Add book** button is on Library. There is no sign-in and no onboarding.
+Three labelled bottom destinations: **Library**, **Reading**, **Journal**. A settings button (tune icon) sits in the top bar. A floating labelled **Add book** button is on Library. There is no onboarding. Signing in is optional and lives under Settings.
 
-Routes: `/library`, `/reading`, `/journal?year=YYYY` (inside the shell); `/add` and `/add?past=true`, `/book/:id`, `/edit/:id`, `/settings` (full screens). Online search is a pushed screen, not a route.
+Routes: `/library`, `/reading`, `/journal?year=YYYY` (inside the shell); `/add` and `/add?past=true`, `/book/:id`, `/edit/:id`, `/settings`, `/friends`, `/friends/:id?name=` (full screens). Online search is a pushed screen, not a route.
 
 ## Library
 
@@ -132,11 +132,30 @@ Cover, title, author, status chip, and the main action (Update page / Start read
 
 On-device images only, through the native share sheet; nothing is uploaded and the reader chooses when. **Share book** (finished books): a 600 x 800 card with the cover, title, and author. **Share shelf** (Journal): a yearly grid of up to 24 covers (labelled as a selection when there are more). The share sheet is anchored to the button (needed on iPad).
 
+## Friends (optional) (`/friends`, `/friends/:id`)
+
+Reached from Settings ("Read with friends" > **Friends and sharing**). The whole app works without it, and nothing is sent until the reader acts. Screenshots: `screenshots/friends-sign-in.png`, `friends-signed-in.png`, `friends-share-dialog.png` (sample library; the account shown was a throwaway test account, deleted afterwards).
+
+**Signed out:** "Read alongside friends." with a plain statement of what is sent (name, username, and email at sign-up; and only if the reader publishes it, titles, authors, status, and finish dates; notes, pins, sessions, and covers never leave the device). **Sign in** or **Create account** (first name, last name, username, email, password). Usernames are 3 to 30 of letters, digits, `_`, `.`; passwords at least 10 characters. The panel warns there is no password reset. Errors are shown in words ("Wrong email or password.", "That username is already taken.").
+
+**Signed in:** the name, `@username` and email, then:
+
+1. **Your shelf for friends.** "Not shared" until the reader taps **Share my shelf**, which asks "Share N books with your friends?" and says exactly what they will see, that a year stays a year, and that notes, pins, sessions, and covers are never shared. After that it shows the count and last published time, **Update shared shelf** (a manual re-publish), and **Stop sharing**. Friends see the shelf as of the last publish.
+2. **Friend requests:** incoming (**Accept**, **Decline**) and outgoing (**Cancel request**). Nobody becomes a friend without accepting.
+3. **Friends:** tap one to open their shelf.
+4. **Add a friend:** an exact username and **Find** ("No one has that username." when none; there is no partial search), then **Send friend request**; or **Find friends from contacts**, which first explains that only phone numbers are sent and not kept, then asks for the system permission. A refusal is explained and nothing is sent. Matches already friends or requested are not offered.
+5. **Be found by phone:** optional. Add a number, then switch on "Let people find me by phone" (off until switched on). The text says the server stores only a scrambled code of the number and does not verify that it is the reader's.
+6. **Blocked** (only when someone is blocked): **Unblock**.
+7. **Your account:** **Sign out**, and **Delete my account** (asks for the password, says it erases the account, friends, and shared shelf from the server and does not affect the library on the device).
+
+**A friend's shelf** (`/friends/:id`): read-only, grouped Reading now, Finished (most recent finish first, unknown last), Wishlist; each book shows its title, author, and finish dates exactly as shared ("Finished: March 2024", "Finished: 2019", "Finished: Date unknown"). A note says it is a snapshot and not part of the reader's own journal or keepsakes: it never adds books, dates, or activity to the reader's library. The menu has **Remove friend** and **Block**, each confirmed. A friend who has not shared shows "Nothing shared yet".
+
 ## Settings ("Your reading room")
 
-- States the privacy position: stored on the device, no account, no cloud, no tracking.
+- States the privacy position: stored on the device, no account needed, no tracking.
 - **Export library:** saves a JSON backup including cover bytes and private pins to a location the reader picks.
 - **Restore a backup:** validates the file, asks "Replace this library?" showing the book count, then replaces the library atomically. A failed restore leaves the existing library unchanged. It replaces; it does not merge.
+- **Friends and sharing** (hidden in the demo): opens Friends, described below.
 - Version and open-source licences (DM Sans and Literata are listed).
 
 ## Drafts (recovery after the app is killed)
@@ -153,4 +172,4 @@ Every tap target is at least 48 x 48. Books, spines, and keepsakes expose labels
 
 ## Not implemented
 
-Sign-in, friends and any other use of the server in `backend.md` (the server exists but the app does not call it), cloud sync, a web app, notifications, payments, ISBN camera scanning, ratings, custom shelves, remembered start dates, editing a recorded finish date, multiple authors per book, dark theme, and process-death recovery beyond the drafts above. See `implementation-status.md` for what is unverified on real devices.
+Password reset, email or phone verification, changing the password or profile from the app, friend notifications, automatic or background sharing, cloud sync of the library, a web app, notifications, payments, ISBN camera scanning, ratings, custom shelves, remembered start dates, editing a recorded finish date, multiple authors per book, dark theme, and process-death recovery beyond the drafts above. See `implementation-status.md` for what is unverified on real devices.

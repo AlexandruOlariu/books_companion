@@ -5,14 +5,18 @@ legal advice.*
 
 Last updated: [date]
 
-Reading Library is a private reading journal. It has no accounts, no ads, no
-analytics, and no tracking.
+Reading Library is a private reading journal. It has no ads, no analytics, and
+no tracking. You do not need an account to use it. An account is optional and
+only exists so you can find friends and share a list of the books you have read
+(see "Optional: friends and sharing" below).
 
 ## What stays on your device
 
 Your books, covers you choose, reading dates, progress, sessions, and private
 notes are stored only on your device. The developer cannot see them. They are
-not uploaded, and automatic cloud backup is disabled on Android.
+not uploaded unless you choose to publish a shelf (see below), and automatic
+cloud backup is disabled on Android. Your notes, pins, reading sessions, and
+cover images never leave your device through any feature of the app.
 
 If you export a backup, the file contains your whole library, including private
 notes and cover images. It is saved where you choose, and you are responsible
@@ -26,8 +30,60 @@ sent to Open Library (openlibrary.org, operated by the Internet Archive) to
 find matching books. When you pick a result, the app downloads that book's cover
 image from Open Library. Like any web request, this reveals your IP address to
 Open Library. Open Library's own privacy policy applies to that service. The
-app sends nothing else, and does not send your library, notes, or any
-identifier. You can use the app fully without ever using online search.
+app's online search sends nothing else, and does not send your library,
+notes, or any identifier. You can use the app fully without ever using online
+search.
+
+## Optional: friends and sharing
+
+Nothing in this section happens unless you create an account in Friends.
+
+**What the developer's server receives and keeps**
+
+- When you create an account: your first and last name, a username, your email
+  address, and your password (stored only as a salted one-way hash, never in
+  readable form).
+- If you tap **Share my shelf** and confirm: for each book, its title, author,
+  status (reading, wishlist, finished), and finish dates exactly as you
+  recorded them (a remembered year stays a year). Nothing else: no notes, pins,
+  reading sessions, progress, series, or covers. Publishing again replaces the
+  earlier copy, and **Stop sharing** deletes it.
+- Your friend requests, friends, and blocked people.
+- If you add a phone number and switch on "Let people find me by phone": a
+  keyed one-way code derived from the number. The number itself is not stored,
+  and the server does not check that it is yours.
+- Technical logs of requests (time, address, and the request line, which
+  includes a username you search for) kept by the server and its web server for
+  operating and securing the service. Request bodies, such as your password,
+  your shelf, or contact numbers, are not logged.
+
+**Who can see it.** Another reader sees your name and username (when they
+search your exact username, or find you by phone if you allowed it) and, once
+you have accepted each other as friends, your published shelf. Nobody sees your
+email address or phone number. You can remove a friend or block someone at any
+time. There is no public profile and no search by name.
+
+**Contacts.** Only if you tap **Find friends from contacts** and allow the
+permission, the app reads the phone numbers in your address book (not names,
+emails, or photos) and sends them to the server. The server compares them with
+people who chose to be found by phone and replies; it does not store or log the
+numbers you sent.
+
+**Where it is stored and for how long.** On a server operated by the developer
+([location and host to fill in]), over an encrypted (HTTPS) connection. Account
+data and the shared shelf are kept until you delete your account. **Delete my
+account** (in Friends) erases your account, friend list, blocks, shared shelf,
+and sign-in sessions from the server immediately; it does not affect the
+library on your device. Backups of the server, if any, are kept for [period].
+
+**Not verified, not recoverable.** Email addresses and phone numbers are not
+verified, and there is currently no password reset; a forgotten password means
+the account cannot be recovered (you can create a new one).
+
+**Sharing with others.** The developer does not sell data or share it with
+advertisers or analytics providers. The server does not use third-party
+services. Open Library (above) receives only your book search text, as
+described.
 
 ## Photos
 

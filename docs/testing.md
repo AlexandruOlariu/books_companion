@@ -5,7 +5,7 @@
 ```sh
 ./tool/flutterw analyze
 dart format --output=none --set-exit-if-changed lib test integration_test
-./tool/flutterw test                                            # 85 unit and widget tests
+./tool/flutterw test                                            # 135 unit and widget tests
 ./tool/flutterw test integration_test/core_flows_test.dart -d <android-device>
 ./tool/flutterw build apk --debug
 ./tool/check_docs.sh                                            # docs cover the code
@@ -13,7 +13,7 @@ dart format --output=none --set-exit-if-changed lib test integration_test
 
 `dart format` is run with the SDK's `dart` (`flutter format` no longer exists). The integration test installs a test build, so it **wipes the app's data on the device**; re-run `lib/dev_seed.dart` afterwards if a seeded library is wanted.
 
-Latest results (2026-10-06): analyzer clean; format clean; 85 unit and widget tests pass; the emulator integration test passes; the debug APK and a release APK (debug-signed) build.
+Latest results (2026-10-07): analyzer clean; format clean; 135 unit and widget tests pass; the emulator integration test passes; the debug APK and a release APK (debug-signed) build.
 
 ## Test inventory
 
@@ -34,6 +34,9 @@ Latest results (2026-10-06): analyzer clean; format clean; 85 unit and widget te
 | `test/series_repository_test.dart` | 6 | series saved, loaded, edited, cleared; number rules; search by series; backup round trip; a pre-series backup restores; an invalid series is rejected |
 | `test/series_and_sort_widget_test.dart` | 7 | one Finished choice; Add another keeps the series and moves the number on; series quick picks; a number without a series is explained; default title sort with series together; author sort and the saved choice; search ranking with the sort breaking ties |
 | `test/preferences_test.dart` | 4 | preferences survive a restart, later writes win, a damaged file is ignored, the memory store |
+| `test/friends_models_test.dart` | 6 | what is published: only title, author, status, and finish dates; every date precision kept; a finished book without a finish sent as unknown; wishlist carries none and a re-read keeps earlier ones; titles clipped to the server limit; an empty library publishes nothing |
+| `test/http_friends_api_test.dart` | 21 | the real client against a local HTTP server that mimics the API: register and sign-in store the session; an expired token is refreshed once and retried; concurrent calls share one refresh; a refused refresh ends the session; losing the connection or a server error never signs the reader out; error messages (server detail, 429, 422 by field); username lookup; contacts sent in batches of 1000 with the region; the exact shelf fields and date splitting on publish; a shelf parsed back with precision intact; over-limit libraries refused before sending |
+| `test/friends_widget_test.dart` | 23 | Settings entry (hidden in the demo); the sign-in panel states what is sent; create account, missing fields, wrong password; sharing asks first and sends only books and dates, cancel sends nothing, an empty library, stop sharing; accept a request; find by username sends a request; contacts explained before any permission, refusal explained, existing friends not re-offered; phone number and the findable switch; sign out; delete account needs the password; a friend's shelf shows dates as shared, never touches the reader's own library, nothing-shared state, remove and block; 200% text on a phone-height view. Uses `test/support/fake_friends_api.dart` |
 | `integration_test/core_flows_test.dart` | 1 | on an Android emulator: Library, Reading, update page, add pin, Journal history, add a past book with year-only precision; asserts the stored value is `2019` and the session count is unchanged |
 
 ### Server tests (`server/tests/`, pytest, 46 tests)
@@ -63,7 +66,9 @@ Run from `server/` with a Postgres test database (see `backend.md`); the suite b
 
 ## Verified in this environment
 
-Android emulator (Pixel 9 Pro image, Android 16): the integration flow; online search with real Open Library results and cover download and save; shelf rendering with a seeded library of 40+ books; release APK signing with a throwaway key; the manifest requests only `INTERNET`. Real Open Library responses were checked once for field names.
+Android emulator (Pixel 9 Pro image, Android 16): the integration flow; online search with real Open Library results and cover download and save; shelf rendering with a seeded library of 40+ books; release APK signing with a throwaway key; the manifest requested only `INTERNET` at the time. Real Open Library responses were checked once for field names.
+
+Friends (2026-10-07), on the same emulator against the real server at `https://ai.duk-tech.com/books-api/`: create account, share a 51-book shelf, and delete the account, all from the UI. The server's database afterwards held exactly the allowed book fields (`id`, `title`, `author`, `status`, `finishes`) with year-precision finishes carrying no month or day, and zero users, shelves, and tokens after deletion. A scripted run of the real client (two accounts, request, accept, publish, read, a stranger seeing nothing) also passed against the public URL. The contacts permission and a real match were **not** exercised (no contacts on the emulator and no second device). Server tests are listed under "Server tests".
 
 ## Not verified (needs hardware or a Mac)
 

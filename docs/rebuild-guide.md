@@ -38,7 +38,9 @@ Verify each screen in a running emulator, not only in widget tests.
 - **Drift `Value(null)`** writes NULL to a non-null column on update; use `Value.absent()` to keep a column unchanged.
 - **Open Library is accent-tolerant but not typo-tolerant;** many titles have no cover. Do not promise covers.
 - **Android release needs `INTERNET`** in the main manifest; only the debug manifest has it by default.
-- **`flutter format` is gone;** use `dart format`.
+- **`flutter format` is gone;** use `dart format`. On this machine `dart` is not on PATH: use `~/.local/share/books-toolchain/flutter/bin/dart`. A `dart format ... >/dev/null 2>&1` that fails with "command not found" formats nothing and says nothing; run the `--set-exit-if-changed` check and read its exit code.
+- **Lists build lazily in widget tests.** Anything below the fold of a 360 x 800 view does not exist until it is scrolled to, and a `find.xxx.first` finder throws instead of being empty. Functional tests can use a tall view (still 360 wide); layout tests keep 800 and drag the list.
+- **Dispose a dialog's text controller in the dialog's own `State`**, not right after `showDialog` returns: the dialog is still animating out and rebuilds with the disposed controller.
 - **The first text-field focus on the newest emulator image shows a stylus tutorial;** dismiss it.
 - **The integration test wipes app data;** reseed afterwards.
 - **Keepsake and shelf positions** are recomputed from the packing function each layout, so adding a book moves later items. That is accepted; if user-placed items are wanted, they need stored positions.

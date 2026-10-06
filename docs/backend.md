@@ -1,6 +1,6 @@
 # Backend (`server/`)
 
-A small Python service that gives readers accounts, friends, and a published shelf their friends can see. It replaces the "share by NFC or share sheet" idea (see D35 in `decisions.md`). **The Flutter app does not use it yet**: nothing in `lib/` calls it, so the app's behaviour, privacy policy, and store declarations are unchanged until a client is built (see "Before the app ships a client").
+A small Python service that gives readers accounts, friends, and a published shelf their friends can see. It replaces the "share by NFC or share sheet" idea (see D35 in `decisions.md`). The Flutter app has an optional client for it (Settings > Friends and sharing; see `features.md` and `architecture.md`, "Friends client"). The app works fully without an account.
 
 Public address: `https://ai.duk-tech.com/books-api/` (nginx strips the prefix; the service itself serves from `/`).
 
@@ -96,6 +96,8 @@ Unknown fields are rejected with 422 rather than ignored. Notes, pins, sessions 
 - **Phone numbers are not verified.** There is no SMS check, so someone can claim a number that is not theirs. The damage is bounded (they appear under their own chosen name to people who have that number, and a request must still be accepted), but it is real. Verification needs an SMS provider, which is a cost and a new data processor.
 - **No email verification and no password reset.** Both need a mailer. A forgotten password currently means a lost account. Registration reports "email already taken", which reveals that an address has an account (rate limited).
 - **No push notifications**, so a friend request is only seen when the app asks.
+- **No change of password or profile in the app yet.** The server supports them (`POST /me/password`, `PATCH /me`); the client does not call them.
+- **Logs contain searched usernames:** `GET /users/lookup?username=` puts the username in nginx's and uvicorn's request line. Request bodies are not logged.
 - **Access tokens cannot be revoked before they expire** (15 minutes); deleting an account or changing a password takes effect on the next refresh, although the deleted user's token stops working immediately because the user row is gone.
 - A single host, a single Postgres container, no replication. Back up the `books-db` volume and `server/.env` (the pepper especially: without it every stored phone hash is useless).
 
@@ -122,12 +124,13 @@ python -m pytest -q             # TEST_DATABASE_URL overrides the default 127.0.
 
 A model change needs a migration: `alembic revision --autogenerate -m "..."` with `DATABASE_URL` pointing at a scratch database, then review it. `test_models_match_the_migrations` fails when they drift. CI runs the suite in the `server-tests` job.
 
-## Before the app ships a client
+## Client checklist (the app side)
 
-Building the app side is a privacy change under the project rules. It must, in the same change:
+The client is built. What the privacy rules required, and where it stands:
 
-1. Update `privacy-policy.md` and `store-privacy.md`: accounts, name, email, shelf data sent to the developer's server, contact numbers sent for matching and not kept, and the new Android `READ_CONTACTS` / iOS contacts permission. "Collects or shares data with the developer: No" becomes false.
-2. Keep the app usable without an account. Sync and friends are optional.
-3. Show the reader exactly what is published (titles, authors, status, finish dates; never notes or pins) and let them unpublish.
-4. Ask for contacts only when the reader taps "Find friends from contacts", and explain that numbers are matched and not stored.
-5. Add the server address to the release checklist (`release.md`) and decide how a signed-out reader is treated after the server is unreachable.
+1. `privacy-policy.md` and `store-privacy.md` describe accounts, the data sent, contacts, and deletion. Done in the draft; the bracketed items (host location, backup period, URL) are still for the owner to fill in.
+2. The app stays fully usable without an account. Done: Friends is opt-in and sits under Settings.
+3. The reader sees what is published before it is sent (confirmation dialog) and can unpublish (**Stop sharing**). Done.
+4. Contacts are requested only after the reader taps **Find friends from contacts** and confirms a dialog explaining that only phone numbers are sent and not kept. Done; the Android and iOS permission texts say the same.
+5. Account deletion exists in the app (Google Play and the App Store require it). Done. **Google Play also requires a web page for deletion requests; it does not exist yet.**
+6. Release checklist: the server address is `HttpFriendsApi.defaultOrigin` (`release.md` lists the remaining steps). Not done: a decision on how long a signed-in reader is kept signed in when the server is unreachable (today they stay signed in; only a refusal by the server ends a session).
