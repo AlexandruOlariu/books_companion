@@ -21,7 +21,7 @@ Flutter 3.47.6 / Dart 3.13.5. Direct dependencies are pinned in `pubspec.yaml`; 
 
 Fonts are bundled (DM Sans, Literata, both OFL) with their licences registered at startup. There is no Freezed, json_serializable, Dio, or cached_network_image despite the plan: domain models are small hand-written classes, and the optional online lookup uses `dart:io` directly.
 
-Targets: Android 7.0+ (API 24; target 36), iOS 15.0+. The iOS build has never been compiled on this Linux host (CI has a macOS job).
+Targets: Android 7.0+ (API 24; target 36), iOS 15.0+. The iOS simulator build compiles in CI on macOS (first green run 2026-10-06, commit `2f53858`, as shown in the GitHub UI). It has never been compiled on this Linux host, and no iOS simulator or device run has happened.
 
 ## Layers
 

@@ -20,7 +20,7 @@ See the final verification notes below for execution results. Tests cover partia
 
 ## Remaining before release
 
-- Run the generated iOS project on macOS/Xcode and test iOS image import, file export/restore, sharing, back navigation, and accessibility. Linux cannot compile an iOS application.
+- Run the generated iOS project on macOS/Xcode and test iOS image import, file export/restore, sharing, back navigation, and accessibility. Linux cannot compile an iOS application; the unsigned simulator build now passes in CI (see below), but no simulator or device run has happened.
 - Profile a 500-book library on a chosen midrange physical Android device. Emulator timings do not establish physical-device performance.
 - Have a new reader try adding a past book, updating a page, and finding a pin without coaching. The visual direction has implementation checks, not user usability validation.
 - Exercise TalkBack/VoiceOver, reduced motion, maximum platform text settings, and interrupted background/process lifecycle behavior on real devices.
@@ -61,3 +61,9 @@ See the final verification notes below for execution results. Tests cover partia
 
 - 57 unit and widget tests pass, run eight times in a row (one earlier flaky test was fixed). New tests cover month, year, and undated grouping and the Months, Days, and History views.
 - The new Journal was reviewed on the emulator with a seeded library: All time year rows, a year's month tiles, the year-only tile, the Date unknown sheet, and the Days view with no sessions. Not yet checked on a real phone or at maximum text size.
+
+## Executed checks — first GitHub CI run (6 October 2026)
+
+- Commit `2f53858`: both jobs of `checks.yml` passed (`analyze-and-test`, 10 minutes; `ios-build`, shown as 1 minute). This is the first evidence that the iOS simulator build compiles and that format, analyze, tests, and the docs check pass on a clean checkout. Observed in the GitHub UI by the owner; not independently re-run here. Check the `ios-build` log to confirm it compiled rather than reusing a cache.
+- The release workflow has not run yet; run it by hand first (`release.md` section 3a).
+

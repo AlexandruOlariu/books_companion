@@ -2,6 +2,10 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-06 (late night): first CI run
+
+- Both jobs of `checks.yml` passed on GitHub for commit `2f53858`: the Linux checks and the macOS iOS simulator build. First evidence that the iOS build compiles and that the docs check works on a clean checkout. Release workflow not yet run.
+
 ## 2026-10-06 (late night): release automation
 
 - `.github/workflows/release.yml`: a `v*` tag runs format, analyze, tests, and the docs check, builds an APK, and publishes a GitHub Release with a checksum; it can also be run by hand to produce an artifact (D30). Helpers `tool/release_version.sh` and `tool/ci_prepare_signing.sh`, both tested locally. Not yet run on GitHub.

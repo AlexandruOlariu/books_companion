@@ -48,9 +48,13 @@ Android emulator (Pixel 9 Pro image, Android 16): the integration flow; online s
 
 ## Not verified (needs hardware or a Mac)
 
-- Any iOS build or native iOS flow (image import, file export and restore, sharing, back navigation, accessibility).
+- Any native iOS flow (image import, file export and restore, sharing, back navigation, accessibility) and any run on an iOS simulator or device. Only the unsigned simulator *build* has been seen to pass, in CI (see below).
 - Performance with 500 books on a midrange physical Android device (profile mode). Emulator timings do not count.
 - Usability: a new reader adding a past book, updating a page, and finding a pin without coaching.
 - TalkBack and VoiceOver, reduced motion, maximum platform text sizes, and background and process lifecycle on real devices.
 - The Google Play and App Store submission flows.
 - A real-phone run of the release APK. (A friend installed an earlier build, reported it functional, and reported the missing-cover behaviour that led to D17.)
+
+## CI results
+
+On 2026-10-06 both jobs of `.github/workflows/checks.yml` passed on GitHub Actions for commit `2f53858`: `analyze-and-test` (format, analyze, `flutter test`, `tool/check_docs.sh`, debug APK; 10 minutes) and `ios-build` (`flutter build ios --simulator --debug` on macOS; the UI showed 1 minute, which is short for an iOS build, so confirm in the job log that it really compiled). This also shows the docs check and the format check pass on a fresh checkout. The release workflow (`release.yml`) has not run yet.
