@@ -2,6 +2,10 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-06 (late night): repository hygiene
+
+- Built APKs are no longer tracked: `dist/`, `*.apk`, and `*.aab` are git-ignored, after a first push carried a 60 MB APK (GitHub warns above 50 MB). See `release.md` for sharing builds as release assets.
+
 ## 2026-10-06 (night): Journal months
 
 - **Journal reworked (D29):** a **Months** view is now the default: one row per year with covers for All time, twelve month tiles for a year, a separate "Sometime in <year>" tile for year-only finishes, and a **Date unknown** row. The session calendar became **Days** with an explanation, an empty-state message, and a dot for finishes instead of a ring. **History** unchanged.

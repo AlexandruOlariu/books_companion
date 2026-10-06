@@ -54,6 +54,10 @@ Not yet done (needs Xcode): an app-level `PrivacyInfo.xcprivacy` added to the
 Runner target. The app code itself uses no tracking and collects nothing, but
 confirm the archive's generated privacy report in Xcode before submitting.
 
+## 3b. Sharing a build without committing it
+
+Built APKs and bundles are ignored by git (`dist/`, `*.apk`, `*.aab`); an APK is about 60 MB and GitHub warns above 50 MB. To share one, attach it to a GitHub Release (`gh release create v0.1.0 dist/reading-library-0.1.0.apk`) or send the file directly. A debug-signed APK installs for testing but cannot update a build signed with a different key.
+
 ## 4. Version
 
 `pubspec.yaml` `version: 0.1.0+1` is `name+buildNumber`. Increase the build
