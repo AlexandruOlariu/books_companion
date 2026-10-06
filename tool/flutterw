@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if command -v flutter >/dev/null 2>&1; then
+  exec flutter "$@"
+elif [[ -x /home/duk-tech/.local/share/books-toolchain/flutter/bin/flutter ]]; then
+  exec /home/duk-tech/.local/share/books-toolchain/flutter/bin/flutter "$@"
+else
+  echo 'Install Flutter 3.47.6 and add its bin directory to PATH.' >&2
+  exit 1
+fi
