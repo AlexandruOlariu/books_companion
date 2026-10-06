@@ -2,6 +2,10 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-06 (late night): release automation
+
+- `.github/workflows/release.yml`: a `v*` tag runs format, analyze, tests, and the docs check, builds an APK, and publishes a GitHub Release with a checksum; it can also be run by hand to produce an artifact (D30). Helpers `tool/release_version.sh` and `tool/ci_prepare_signing.sh`, both tested locally. Not yet run on GitHub.
+
 ## 2026-10-06 (late night): repository hygiene
 
 - Built APKs are no longer tracked: `dist/`, `*.apk`, and `*.aab` are git-ignored, after a first push carried a 60 MB APK (GitHub warns above 50 MB). See `release.md` for sharing builds as release assets.

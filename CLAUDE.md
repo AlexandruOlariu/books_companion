@@ -23,4 +23,4 @@ A private, local-first reading journal for Android and iOS (Flutter). The owner 
 - Check changes in the running app on the emulator (`Pixel_9_Pro`), not only in tests. The integration test wipes app data; reseed with `lib/dev_seed.dart`.
 - Schema changes need a version bump, a schema dump, a migration step, and a test (`docs/architecture.md`, Migrations).
 - Release builds: `docs/release.md`. The app identifier is still a placeholder.
-- Never commit built artifacts (APK, AAB). `dist/` is git-ignored; GitHub warns above 50 MB. Share builds as GitHub Release assets or files.
+- Releases: `v<version>` tag, matching `pubspec.yaml`, triggers `.github/workflows/release.yml` (see `docs/release.md`). Never commit built artifacts (APK, AAB). `dist/` is git-ignored; GitHub warns above 50 MB.

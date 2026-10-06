@@ -24,6 +24,7 @@ See the final verification notes below for execution results. Tests cover partia
 - Profile a 500-book library on a chosen midrange physical Android device. Emulator timings do not establish physical-device performance.
 - Have a new reader try adding a past book, updating a page, and finding a pin without coaching. The visual direction has implementation checks, not user usability validation.
 - Exercise TalkBack/VoiceOver, reduced motion, maximum platform text settings, and interrupted background/process lifecycle behavior on real devices.
+- Run the release workflow once on GitHub (`release.md` section 3a) and set the `ANDROID_KEYSTORE_*` secrets; until then it is untested there.
 - Choose the permanent bundle identifier (`tool/set_bundle_id.sh`), create the Android upload key and iOS signing team, publish the privacy policy, and complete store listings. See `release.md`, `privacy-policy.md`, and `store-privacy.md`.
 - Final icon review and store-size screenshots from a seeded build.
 - Cover paths are stored as absolute paths. If iOS relocates the app container (for example restoring a device backup to a new device), covers would need re-resolving against the current documents directory; this has not been observed here and needs checking on iOS.

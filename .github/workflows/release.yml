@@ -1,0 +1,113 @@
+name: Release APK
+
+# Push a tag such as v0.1.0 to test, build, and publish an APK as a GitHub
+# Release. Run it by hand (Actions tab) to build an APK artifact without
+# publishing. See docs/release.md.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      signed: ${{ steps.signing.outputs.signed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - run: flutter analyze
+      - run: flutter test
+      - run: ./tool/check_docs.sh
+
+      # A tag must agree with pubspec.yaml; a manual run just reads pubspec.yaml.
+      - id: version
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "version=$(./tool/release_version.sh "${GITHUB_REF_NAME}")" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$(./tool/release_version.sh)-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - id: signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./tool/ci_prepare_signing.sh >> "$GITHUB_OUTPUT"
+
+      # The build number must rise with every release for Android to accept an
+      # update, so it comes from the run number rather than from pubspec.yaml.
+      - name: Build APK
+        env:
+          READING_LIBRARY_DEBUG_SIGNING: ${{ steps.signing.outputs.signed == 'true' && '0' || '1' }}
+        run: |
+          flutter build apk --release \
+            --build-name="${{ steps.version.outputs.version }}" \
+            --build-number="${GITHUB_RUN_NUMBER}"
+
+      - name: Name and checksum
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/reading-library-${{ steps.version.outputs.version }}.apk"
+          (cd dist && sha256sum reading-library-*.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reading-library-apk
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: reading-library-apk
+          path: dist
+      - name: Publish release
+        env:
+          SIGNED: ${{ needs.build.outputs.signed }}
+        run: |
+          if [ "$SIGNED" = "true" ]; then
+            flag=""
+            note="Signed with the project's upload key. It installs over earlier builds signed with the same key."
+          else
+            flag="--prerelease"
+            note="**Debug-signed test build.** It installs for testing, but it cannot update a build signed with a different key (uninstall first and export a backup from Settings), and Google Play rejects it."
+          fi
+          printf '%s\n\n%s\n\nSHA-256 is in SHA256SUMS.txt. Built by CI after format, analyze, tests, and docs checks passed.\n' \
+            "$note" "Android 7.0 or newer. Open the APK on the phone and allow installing from this source when asked." > notes.md
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "$GITHUB_REF_NAME" --notes-file notes.md --generate-notes $flag

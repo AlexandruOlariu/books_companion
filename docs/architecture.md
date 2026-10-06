@@ -112,7 +112,8 @@ Envelope: `{ "format": "reading-library", "version": 1, "data": { "version": 1, 
 
 - **Android:** `applicationId` `app.readingroom.reading_library` (a placeholder; change with `tool/set_bundle_id.sh`), Kotlin namespace unchanged. `allowBackup=false`. The main manifest requests only `INTERNET` (optional search). Release signing reads `android/key.properties`; without it a release build fails unless `READING_LIBRARY_DEBUG_SIGNING=1` is set for a local, non-uploadable build.
 - **iOS:** bundle id `app.readingroom.readingLibrary` (placeholder), `NSPhotoLibraryUsageDescription` set, automatic signing with no team committed. No app-level privacy manifest yet.
-- **CI** (`.github/workflows/checks.yml`): format check, analyze, tests, debug APK on Linux; unsigned simulator build on macOS; `tool/check_docs.sh`.
+- **CI** (`.github/workflows/checks.yml`): format check, analyze, tests, `tool/check_docs.sh`, debug APK on Linux; unsigned simulator build on macOS.
+- **Release CI** (`.github/workflows/release.yml`): on a `v*` tag, the same checks, then a release APK published as a GitHub Release (signed when the `ANDROID_KEYSTORE_*` secrets exist, otherwise debug-signed and marked pre-release). Helpers: `tool/release_version.sh` (tag must match `pubspec.yaml`), `tool/ci_prepare_signing.sh` (secrets to `android/key.properties`). See `release.md`.
 
 ## File map
 
@@ -154,4 +155,4 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/features/settings/presentation/settings_screen.dart` | export, restore, licences |
 | `lib/features/sharing/data/share_image.dart` | on-device share images |
 
-Other tooling: `tool/flutterw` (finds the Flutter SDK), `tool/set_bundle_id.sh`, `tool/check_docs.sh`, `tool/docs_stop_hook.sh`.
+Other tooling: `tool/flutterw` (finds the Flutter SDK), `tool/set_bundle_id.sh`, `tool/check_docs.sh`, `tool/docs_stop_hook.sh`, `tool/release_version.sh`, `tool/ci_prepare_signing.sh`.

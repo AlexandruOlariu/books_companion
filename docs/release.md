@@ -54,6 +54,31 @@ Not yet done (needs Xcode): an app-level `PrivacyInfo.xcprivacy` added to the
 Runner target. The app code itself uses no tracking and collects nothing, but
 confirm the archive's generated privacy report in Xcode before submitting.
 
+## 3a. Automated releases (GitHub Actions)
+
+`.github/workflows/release.yml` builds and publishes the APK so nothing has to be built or uploaded by hand.
+
+1. Make sure `pubspec.yaml` has the version you want (`version: 0.2.0+1`; the part after `+` is ignored by CI).
+2. Push a tag that matches it: `git tag v0.2.0 && git push origin v0.2.0`.
+3. The workflow runs format check, analyze, all tests, and `tool/check_docs.sh`, then builds a release APK and publishes a GitHub Release with the APK and `SHA256SUMS.txt`. Any failing step stops the release. A tag that does not match `pubspec.yaml` is refused (`tool/release_version.sh`).
+4. To build without publishing, run the workflow by hand from the Actions tab; the APK is kept as a workflow artifact for 30 days.
+
+**Signing.** With the four repository secrets below the APK is signed with your upload key and published as a normal release, and later releases update earlier ones. Without them CI signs with a throwaway debug key and marks the release **pre-release** with a warning: it installs for testing but cannot update a build signed by another key. Each CI run would otherwise produce a different debug key, so set the secrets before sharing builds widely.
+
+```sh
+# one time: create the key (keep the .jks and passwords backed up outside git)
+keytool -genkeypair -v -keystore upload-keystore.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+# store it as repository secrets (needs the GitHub CLI, logged in)
+base64 -w0 upload-keystore.jks | gh secret set ANDROID_KEYSTORE_BASE64
+gh secret set ANDROID_KEYSTORE_PASSWORD
+gh secret set ANDROID_KEY_ALIAS          # upload
+gh secret set ANDROID_KEY_PASSWORD
+```
+
+**Build number.** Android only accepts an update with a higher `versionCode`, so CI uses the workflow run number as the build number and the tag as the version name, instead of the `+N` in `pubspec.yaml`.
+
+**Caveats.** The workflow has not yet run on GitHub; expect to adjust it on the first run. It signs Android only; iOS releases need a Mac and signing (section 3). Only the Android job publishes; the iOS simulator job in `checks.yml` is separate.
+
 ## 3b. Sharing a build without committing it
 
 Built APKs and bundles are ignored by git (`dist/`, `*.apk`, `*.aab`); an APK is about 60 MB and GitHub warns above 50 MB. To share one, attach it to a GitHub Release (`gh release create v0.1.0 dist/reading-library-0.1.0.apk`) or send the file directly. A debug-signed APK installs for testing but cannot update a build signed with a different key.
