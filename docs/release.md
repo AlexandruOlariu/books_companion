@@ -67,10 +67,15 @@ confirm the archive's generated privacy report in Xcode before submitting.
 
 `.github/workflows/release.yml` builds and publishes the APK so nothing has to be built or uploaded by hand.
 
-1. Make sure `pubspec.yaml` has the version you want (`version: 0.2.0+1`; the part after `+` is ignored by CI).
-2. Push a tag that matches it: `git tag v0.2.0 && git push origin v0.2.0`.
-3. The workflow runs format check, analyze, all tests, and `tool/check_docs.sh`, then builds a release APK and publishes a GitHub Release with the APK and `SHA256SUMS.txt`. Any failing step stops the release. A tag that does not match `pubspec.yaml` is refused (`tool/release_version.sh`).
-4. To build without publishing, run the workflow by hand from the Actions tab; the APK is kept as a workflow artifact for 30 days.
+**Every push to `main` makes a new release (D39).**
+
+1. Push to `main`. The workflow runs format check, analyze, all tests, `tool/check_docs.sh` and `tool/test_release_scripts.sh`, then builds a release APK and publishes a GitHub Release with the APK and `SHA256SUMS.txt`. Any failing step stops the release.
+2. The version is chosen by `tool/next_release_version.sh`: the newest plain `vX.Y.Z` tag with its patch number raised by one (`v0.1.1` becomes `v0.1.2`), or the `pubspec.yaml` version when that is newer than every tag (set `version: 0.2.0+1` and push to release `v0.2.0`; the part after `+` is ignored). The tag is created on the tested commit when the release is published.
+3. To push without releasing, put `[skip release]` in the head commit's message. Only the head commit of the push is looked at.
+4. A pushed tag (`git tag v0.2.0 && git push origin v0.2.0`) still releases under exactly that name, and is refused if it does not match `pubspec.yaml` (`tool/release_version.sh`). Use it for a hand-picked version number.
+5. To build without publishing, run the workflow by hand from the Actions tab; the APK is kept as a workflow artifact for 30 days.
+
+Several pushes in quick succession are queued one at a time; GitHub drops a queued run when a newer one arrives behind it, so a burst may release only its last commit. The workflow's own token creates the tag, which by GitHub's rule does not start a second run. Every release is public and carries the whole app, so docs-only pushes also publish one: use `[skip release]` for those.
 
 **Signing.** With the four repository secrets below the APK is signed with your upload key and published as a normal release, and later releases update earlier ones. Without them CI signs with a throwaway debug key and marks the release **pre-release** with a warning: it installs for testing but cannot update a build signed by another key. Each CI run would otherwise produce a different debug key, so set the secrets before sharing builds widely.
 
@@ -84,7 +89,7 @@ gh secret set ANDROID_KEY_ALIAS          # upload
 gh secret set ANDROID_KEY_PASSWORD
 ```
 
-**Build number.** Android only accepts an update with a higher `versionCode`, so CI uses the workflow run number as the build number and the tag as the version name, instead of the `+N` in `pubspec.yaml`.
+**Build number.** Android only accepts an update with a higher `versionCode`, so CI uses the workflow run number as the build number and the release version as the version name, instead of the `+N` in `pubspec.yaml`. The app's own version line in Settings is read from nothing: it is typed text (`0.1.1`) and does not follow the release version.
 
 **Where the upload key is.** The key was generated on 2026-10-06 and lives in `~/.config/reading-library-signing/` on the development machine (`upload-keystore.jks` and `passwords.txt`, both mode 600, outside the repository), with copies in the four GitHub secrets. Back that folder up somewhere safe: GitHub secrets cannot be read back, and without the key no update can be signed to replace an installed build. Never commit it or paste its passwords anywhere. Its certificate is `CN=Reading Library, OU=Upload key`.
 

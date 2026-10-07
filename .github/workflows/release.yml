@@ -1,10 +1,14 @@
 name: Release APK
 
-# Push a tag such as v0.1.0 to test, build, and publish an APK as a GitHub
-# Release. Run it by hand (Actions tab) to build an APK artifact without
+# Every push to main tests, builds, and publishes an APK as a new GitHub
+# Release, versioned automatically (tool/next_release_version.sh). Put
+# [skip release] in the head commit message to push without releasing. Pushing
+# a tag such as v0.2.0 (it must match pubspec.yaml) releases under that exact
+# name. Run it by hand (Actions tab) to build an APK artifact without
 # publishing. See docs/release.md.
 on:
   push:
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 
@@ -19,11 +23,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    if: >-
+      github.ref_type == 'tag' || github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[skip release]')
     outputs:
       version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
       signed: ${{ steps.signing.outputs.signed }}
     steps:
+      # All tags are needed to pick the next version.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v4
         with:
@@ -41,15 +52,24 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - run: ./tool/check_docs.sh
+      - run: ./tool/test_release_scripts.sh
 
-      # A tag must agree with pubspec.yaml; a manual run just reads pubspec.yaml.
+      # A pushed tag must agree with pubspec.yaml and is released as it is. A
+      # push to main gets the next version automatically and a new tag. A
+      # manual run only builds (no tag, nothing published).
       - id: version
         run: |
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            echo "version=$(./tool/release_version.sh "${GITHUB_REF_NAME}")" >> "$GITHUB_OUTPUT"
+            version=$(./tool/release_version.sh "${GITHUB_REF_NAME}")
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          elif [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            version=$(./tool/next_release_version.sh)
+            echo "tag=v${version}" >> "$GITHUB_OUTPUT"
           else
-            echo "version=$(./tool/release_version.sh)-dev" >> "$GITHUB_OUTPUT"
+            version="$(./tool/release_version.sh)-dev"
+            echo "tag=" >> "$GITHUB_OUTPUT"
           fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - id: signing
         env:
@@ -84,7 +104,7 @@ jobs:
 
   publish:
     needs: build
-    if: github.ref_type == 'tag'
+    if: needs.build.outputs.tag != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -99,6 +119,7 @@ jobs:
       - name: Publish release
         env:
           SIGNED: ${{ needs.build.outputs.signed }}
+          TAG: ${{ needs.build.outputs.tag }}
         run: |
           if [ "$SIGNED" = "true" ]; then
             flag=""
@@ -109,5 +130,8 @@ jobs:
           fi
           printf '%s\n\n%s\n\nSHA-256 is in SHA256SUMS.txt. Built by CI after format, analyze, tests, and docs checks passed.\n' \
             "$note" "Android 7.0 or newer. Open the APK on the phone and allow installing from this source when asked." > notes.md
-          gh release create "$GITHUB_REF_NAME" dist/* \
-            --title "$GITHUB_REF_NAME" --notes-file notes.md --generate-notes $flag
+          # For a push to main the tag does not exist yet: it is created here, on
+          # the commit that was tested. (A tag made with the workflow's own token
+          # does not start another run.)
+          gh release create "$TAG" dist/* --target "$GITHUB_SHA" \
+            --title "$TAG" --notes-file notes.md --generate-notes $flag

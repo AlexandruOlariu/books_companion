@@ -59,6 +59,10 @@ Run from `server/` with a Postgres test database (see `backend.md`); the suite b
 | `server/tests/test_migrations.py` | 3 | models equal the migrations, health check, interactive docs off |
 | `server/tests/conftest.py` | n/a | fixtures; refuses a test database whose name does not end in `_test` |
 
+### Release scripts
+
+`tool/test_release_scripts.sh` (7 checks, run by both workflows) covers `tool/next_release_version.sh`: no tags uses `pubspec.yaml`, the patch goes up from the newest tag, versions compare numerically (`1.10.0` after `1.9.0`), pre-release and non-version tags are ignored, a newer `pubspec.yaml` wins, and one equal to the newest tag is raised by one. The workflow itself has not been run on GitHub since it was changed.
+
 ## Conventions that avoid false failures
 
 - Layout tests set `tester.view.physicalSize = Size(1080, 2400)` and `devicePixelRatio = 3` (360 x 800 logical) and scroll with `tester.drag`, because the default surface is wider and shorter than a phone.

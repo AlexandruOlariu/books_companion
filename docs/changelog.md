@@ -2,6 +2,10 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-07: every push to main publishes a release
+
+- Decision D39. `.github/workflows/release.yml` now also runs on pushes to `main`: after the usual checks it builds the APK and creates the next release (`tool/next_release_version.sh`: newest `vX.Y.Z` tag with the patch raised, or the `pubspec.yaml` version when newer; the first will be `v0.1.2`) on the tested commit. `[skip release]` in the head commit message skips it; a hand-pushed `v*` tag still releases under its own name. New `tool/test_release_scripts.sh` (7 checks, also run in `checks.yml`). Not run on GitHub yet: the workflow was validated as YAML and the version script by its tests, but only the first push to `main` will exercise it.
+
 ## 2026-10-07: the library is saved to a required account
 
 - **Decision D38, a privacy change.** The owner asked for everything to be saved in the backend. The app now opens on an account page until someone is signed in, and the whole library (books, dates, sessions, private notes and pins) is saved to the account on the developer's server in the background. The phone is still written first and works offline; changes are saved about 3 s after the last one, on return to the app, and after signing in, and retried every minute while offline. `privacy-policy.md` and `store-privacy.md` were rewritten (the library, notes included, is on the server, readable by the developer, not end-to-end encrypted; an account is required). The demo build needs no account.
