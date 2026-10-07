@@ -85,7 +85,7 @@ Reached from **Search online** in the add form. Search by title, author, or ISBN
 
 - Source: Open Library (`openlibrary.org`). Only the typed text is sent. The screen says so.
 - Results show thumbnail, title, author, first-publication year, page count, and **no cover** when there is none. A note says page counts are typical across editions.
-- **Fallback for misspellings:** if nothing matches every word and at least two words of three or more letters were typed, a looser any-word search runs and the screen says "No exact match. These are the closest results...". Never for ISBNs or single words.
+- **Fallback for misspellings:** if nothing matches every word and at least two words of three or more letters were typed (common words such as "the", "and", "din", "pentru" do not count), a looser any-word search runs and the screen says "No exact match. These are the closest results...". Never for ISBNs or single words.
 - Choosing a result downloads its cover into app storage (validated by image content, 5 MB limit), fills the form, and records the edition source as `open_library`. Language is prefilled only when the work lists exactly one language (a work's list covers all editions).
 - After choosing, the form says whether the cover was found: "Filled from Open Library. Check the details against your edition.", "...which has no cover for this book. Choose one from your photos, or keep the generated cover.", or "...but the cover could not be downloaded...".
 - Failure (offline, timeout, bad response): "Could not reach Open Library. Check your connection, or add the book manually." The typed text is kept and **Add manually instead** returns to the form.

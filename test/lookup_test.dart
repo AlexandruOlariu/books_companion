@@ -109,6 +109,11 @@ void main() {
     // Short words are not worth matching on.
     await lookup.search('of a housmaid');
     expect(requests.last.queryParameters['q'], 'of a housmaid');
+    // Common words would match the whole catalogue and time Open Library out.
+    await lookup.search('Frieda The Coworker');
+    expect(requests.last.queryParameters['q'], 'Frieda OR Coworker');
+    await lookup.search('the housmaid');
+    expect(requests.last.queryParameters['q'], 'the housmaid');
   });
 
   test(

@@ -45,6 +45,7 @@ Dates are 2026-10-06 unless stated (the whole POC was built in one working sessi
 **D17. Say plainly when there is no cover.** Many titles, especially Romanian ones (e.g. *Enigma Otiliei*, *Cel mai iubit dintre pământeni*), have no cover in Open Library. Results show "no cover" before choosing, the form says so after, and the cover preview appears whenever a cover exists. *Why:* a reader reported "it does not fetch the cover" and the app had given no hint that none existed.
 
 **D18. Misspelled queries fall back to an any-word search, clearly labelled.** Open Library handles diacritics and word order but has no typo tolerance ("freida mcfaden housemaid" returns nothing). Only for two or more words of 3+ letters, never for ISBNs or single words, and a failed retry is never an error.
+  - 2026-10-07: the retry now drops common words ("the", "and", "din", "pentru", ...). "Frieda The Coworker" retried as `Frieda OR The OR Coworker`, which Open Library could not answer (HTTP 500 after ~10 s), so the reader saw no results. Cost: a title made only of stop words plus one real word gets no retry.
 
 **D19. OPEN: Google Books as a cover and metadata fallback.** Would fix missing Romanian covers. Not built because it sends the typed text and IP address to a second third-party and requires updating `privacy-policy.md` and `store-privacy.md`. Needs an explicit product decision.
 

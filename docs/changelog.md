@@ -2,6 +2,10 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-07: online search fix for titles with "the"
+
+- The misspelling retry in online search now leaves out common words ("the", "and", "din", ...). A typo in a title containing "The" (for example "Frieda The Coworker") used to send `... OR The OR ...`, which Open Library failed to answer, so nothing was shown. Now it finds *The Coworker* by Freida McFadden (D18). Not yet checked on the emulator.
+
 ## 2026-10-07: release v0.1.1
 
 - Version `0.1.1`: the first release with Friends (the Settings screen shows the same version). Published by the tag workflow as a public GitHub Release because the repository is public (see `release.md`, D30).

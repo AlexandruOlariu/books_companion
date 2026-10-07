@@ -25,6 +25,40 @@ class OpenLibraryLookup implements BookLookup {
        _catalogue = catalogue ?? Uri.https('openlibrary.org');
 
   static const _agent = 'ReadingLibrary/0.1';
+
+  /// Words that appear in most titles. In an any-word query one of them
+  /// matches nearly the whole catalogue, and Open Library answers with a 500
+  /// after about ten seconds, so "frieda the coworker" found nothing at all.
+  static const _stopWords = {
+    'the',
+    'and',
+    'for',
+    'from',
+    'with',
+    'into',
+    'are',
+    'was',
+    'not',
+    'din',
+    'cel',
+    'cea',
+    'cei',
+    'cele',
+    'pentru',
+    'sau',
+    'despre',
+    'una',
+    'les',
+    'des',
+    'une',
+    'der',
+    'die',
+    'das',
+    'und',
+    'del',
+    'los',
+    'las',
+  };
   static const _unavailable =
       'Could not reach Open Library. Check your connection, or add the book manually.';
 
@@ -65,7 +99,7 @@ class OpenLibraryLookup implements BookLookup {
       // with any-word matching and say so, rather than show an empty list.
       final words = text
           .split(RegExp(r'[^\p{L}\p{N}]+', unicode: true))
-          .where((w) => w.length >= 3)
+          .where((w) => w.length >= 3 && !_stopWords.contains(w.toLowerCase()))
           .toList();
       if (words.length < 2) return exact;
       try {

@@ -24,7 +24,7 @@ Latest results (2026-10-07): analyzer clean; format clean; 135 unit and widget t
 | `test/widget_test.dart` | 2 | update a page without creating activity; layouts at 360 px and 200% text |
 | `test/search_test.dart` | 7 | diacritics, word order, ranking, a filter hiding a match (phone-sized screen), search miss, clear button |
 | `test/shelf_test.dart` | 9 | keepsake thresholds, row packing (no overflow, order, tap sizes, evenly spread keepsakes), keepsake semantics, hidden under a filter |
-| `test/lookup_test.dart` | 7 | Open Library parsing, ISBN query, misspelling fallback, failures, real-image check, against a local HTTP server |
+| `test/lookup_test.dart` | 7 | Open Library parsing, ISBN query, misspelling fallback (stop words left out), failures, real-image check, against a local HTTP server |
 | `test/online_and_draft_widget_test.dart` | 6 | search to filled form, no-cover message, cover preview, offline fallback, book draft restore, pin draft restore and clear |
 | `test/journal_buckets_test.dart` | 4 | months hold only remembered months in order; a year-only finish is never in a month; years newest first with undated apart; every finish counted exactly once |
 | `test/journal_widget_test.dart` | 4 | All time year rows; a year's month tiles and a month sheet that excludes year-only books; Days explains itself and past finishes do not count; History groups |

@@ -109,7 +109,7 @@ Envelope: `{ "format": "reading-library", "version": 1, "data": { "version": 1, 
 
 ## Online lookup (`lib/features/book_search`)
 
-`BookLookup` (domain) has `search(query)` and `fetchCover(suggestion)`. `OpenLibraryLookup` (data) uses `dart:io` `HttpClient` with an 8 s connect timeout, 15 s response timeout, size caps (2 MB JSON, 5 MB image), a `ReadingLibrary/0.1` user agent, and no identifiers. Cover bytes are accepted only if they are JPEG or PNG by content. All failures become a friendly `LookupException`; the looser retry for misspellings never raises an error. Hosts are injectable for tests.
+`BookLookup` (domain) has `search(query)` and `fetchCover(suggestion)`. `OpenLibraryLookup` (data) uses `dart:io` `HttpClient` with an 8 s connect timeout, 15 s response timeout, size caps (2 MB JSON, 5 MB image), a `ReadingLibrary/0.1` user agent, and no identifiers. Cover bytes are accepted only if they are JPEG or PNG by content. All failures become a friendly `LookupException`; the looser retry for misspellings never raises an error and leaves out a short stop-word list (English, Romanian, a few French, German and Spanish articles), because an any-word query containing "the" makes Open Library return HTTP 500 after about 10 s. Hosts are injectable for tests.
 
 ## Shelf rendering (`lib/features/library/presentation/shelf.dart`)
 
