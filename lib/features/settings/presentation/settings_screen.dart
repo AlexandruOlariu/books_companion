@@ -171,12 +171,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
         const SizedBox(height: 40),
-        const Text('Reading Library · 0.1.0'),
+        const Text('Reading Library · 0.1.1'),
         TextButton(
           onPressed: () => showLicensePage(
             context: context,
             applicationName: 'Reading Library',
-            applicationVersion: '0.1.0',
+            applicationVersion: '0.1.1',
           ),
           child: const Text('Open-source licenses'),
         ),

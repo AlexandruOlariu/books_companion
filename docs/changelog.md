@@ -2,6 +2,11 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-07: release v0.1.1
+
+- Version `0.1.1`: the first release with Friends (the Settings screen shows the same version). Published by the tag workflow as a public GitHub Release because the repository is public (see `release.md`, D30).
+- Policy placeholders in `privacy-policy.md` (host location, backup period, URL) and the Google Play web account-deletion page are **still open**; the release was published anyway at the owner's request.
+
 ## 2026-10-07: friends in the app
 
 - **Friends (optional)** in Settings: sign in or create an account, publish a shelf for friends (with a confirmation of exactly what is sent), friend requests, find by exact username or from contacts, be found by phone (opt-in), block, sign out, delete the account (D36). A friend's shelf is read-only and separate from the reader's own library.
