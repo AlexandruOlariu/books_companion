@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../library/domain/models.dart';
+import '../../library/domain/sorting.dart';
 import '../../library/presentation/library_screen.dart';
 import '../../sharing/data/share_image.dart';
 import 'journal_months.dart';
@@ -11,15 +14,15 @@ import 'journal_months.dart';
 /// The three ways to look at the Journal.
 enum JournalView { months, days, history }
 
-class JournalScreen extends StatefulWidget {
+class JournalScreen extends ConsumerStatefulWidget {
   final LibrarySnapshot data;
   final int? initialYear;
   const JournalScreen({super.key, required this.data, this.initialYear});
   @override
-  State<JournalScreen> createState() => _JournalScreenState();
+  ConsumerState<JournalScreen> createState() => _JournalScreenState();
 }
 
-class _JournalScreenState extends State<JournalScreen> {
+class _JournalScreenState extends ConsumerState<JournalScreen> {
   late int? year = widget.initialYear;
   late DateTime month = DateTime(
     widget.initialYear ?? DateTime.now().year,
@@ -89,7 +92,17 @@ class _JournalScreenState extends State<JournalScreen> {
               TextButton.icon(
                 onPressed: () async {
                   try {
-                    await ShareImage.yearShelf(data, year, context);
+                    // The shared shelf follows the order chosen in the Library.
+                    final saved = await ref
+                        .read(preferencesProvider)
+                        .read(librarySortPreference);
+                    if (!context.mounted) return;
+                    await ShareImage.yearShelf(
+                      data,
+                      year,
+                      LibrarySort.fromName(saved),
+                      context,
+                    );
                   } catch (_) {
                     if (context.mounted) {
                       notifyUser(context, 'Could not create the share image.');

@@ -20,7 +20,6 @@ class LibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
-  static const _sortKey = 'librarySort';
   LibrarySort sort = LibrarySort.title;
   BookStatus? status;
   int? year;
@@ -33,7 +32,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   void initState() {
     super.initState();
     // The reader's last choice is remembered between launches.
-    ref.read(preferencesProvider).read(_sortKey).then((saved) {
+    ref.read(preferencesProvider).read(librarySortPreference).then((saved) {
       if (saved != null && mounted) {
         setState(() => sort = LibrarySort.fromName(saved));
       }
@@ -86,7 +85,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       sort = picked;
       selectedId = null;
     });
-    await ref.read(preferencesProvider).write(_sortKey, picked.name);
+    await ref
+        .read(preferencesProvider)
+        .write(librarySortPreference, picked.name);
   }
 
   Widget _emptyState(LibrarySnapshot data, int hidden) {

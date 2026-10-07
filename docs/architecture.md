@@ -165,7 +165,7 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/core/widgets/common.dart` | eyebrow, empty state, snackbar, discard dialog, form sheet |
 | `lib/features/library/domain/models.dart` | domain classes, `PartialDate`, validation, `LibraryRepository` interface |
 | `lib/features/library/domain/search.dart` | diacritic-insensitive multi-word search and ranking (title, author, series) |
-| `lib/features/library/domain/sorting.dart` | title and author sort keys, series grouping, `LibrarySort` |
+| `lib/features/library/domain/sorting.dart` | title and author sort keys, series grouping, `LibrarySort`, and `librarySortPreference` (the preferences key for the saved sort, also read by the Journal's Share shelf) |
 | `lib/features/library/data/local_library_repository.dart` | Drift implementation, export and restore validation |
 | `lib/features/library/presentation/library_screen.dart` | Library tab: filters, search, empty states, selection panel |
 | `lib/features/library/presentation/shelf.dart` | shelf packing, rows, planks, keepsake note |
@@ -183,7 +183,7 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/features/history/presentation/journal_screen.dart` | Journal tab: summary, Months / Days / History views, session calendar |
 | `lib/features/book_details/presentation/book_details_screen.dart` | book details, pins, history, remove |
 | `lib/features/settings/presentation/settings_screen.dart` | export, restore, licences |
-| `lib/features/sharing/data/share_image.dart` | on-device share images |
+| `lib/features/sharing/data/share_image.dart` | on-device share images; `yearShelf` takes the `LibrarySort`, lists every book, and scales the canvas down above 8000 px tall |
 | `lib/features/friends/domain/friends_models.dart` | `Person`, `Account`, `SharedBook`, `SharedShelf`, `FriendsException`, the `FriendsApi` interface, and `sharedBooksFrom` (what is published) |
 | `lib/features/friends/data/http_friends_api.dart` | `FriendsApi` over HTTPS with `dart:io`: tokens, refresh, error messages |
 | `lib/features/friends/data/contacts_source.dart` | contacts permission and phone numbers (numbers only) |

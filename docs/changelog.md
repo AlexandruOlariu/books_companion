@@ -2,6 +2,11 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-07: Share shelf shows every book, in the Library's order
+
+- Found by the owner testing a real 29-book shelf: **Share shelf** cut the image to 24 covers ("a selection of 24") and ignored the chosen sort. It now includes every finished book and follows the saved Library sort (`librarySortPreference`). The Journal screen became a `ConsumerStatefulWidget` to read it. An image taller than 8000 px is scaled down instead of truncated (not exercised on a device; a 29-book shelf is about 2000 px tall).
+- No decision reversed. Keepsakes still hide while a status/year filter or search is active (D23); a cover that is a photo of a book's back is the stored cover image, not a rendering fault.
+
 ## 2026-10-07: online search through the server
 
 - Online search now goes through the Reading Library server (`POST /books/search`, no account needed), so search fixes no longer need an app release. If the server cannot be reached, the app asks Open Library directly, as before. Covers still come straight from Open Library (D37).

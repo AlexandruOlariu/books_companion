@@ -1,6 +1,9 @@
 import 'models.dart';
 import 'search.dart';
 
+/// The preferences key under which the reader's last sort is remembered.
+const librarySortPreference = 'librarySort';
+
 /// How the shelf and the list are ordered.
 enum LibrarySort {
   title('Title (A–Z)', 'Title'),

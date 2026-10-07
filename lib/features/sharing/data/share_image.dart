@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/book_cover.dart';
 import '../../library/domain/models.dart';
+import '../../library/domain/sorting.dart';
 
 class ShareImage {
   static void _text(
@@ -113,18 +114,26 @@ class ShareImage {
     // Keep the API independent from widgets/repaint boundaries.
   }
 
+  /// The tallest image a phone GPU is sure to render; a bigger shelf is drawn
+  /// smaller instead of being cut short.
+  static const _maxImageHeight = 8000;
+
+  /// Every book finished in [year] (all time when null), in the Library's
+  /// [sort] order.
   static Future<void> yearShelf(
     LibrarySnapshot data,
     int? year,
+    LibrarySort sort,
     BuildContext context,
   ) async {
     final origin = _origin(context);
     final ids = data.finishesIn(year).map((c) => c.userBookId).toSet();
-    final books = data.books.where((b) => ids.contains(b.id)).take(24).toList();
+    final books = sortBooks(data.books.where((b) => ids.contains(b.id)), sort);
     final rows = (books.length / 4).ceil();
     final height = 250 + rows * 222;
+    final scale = height > _maxImageHeight ? _maxImageHeight / height : 1.0;
     final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
+    final canvas = Canvas(recorder)..scale(scale);
     canvas.drawColor(RoomColors.paper, BlendMode.src);
     _text(
       canvas,
@@ -136,7 +145,7 @@ class ShareImage {
     );
     _text(
       canvas,
-      '${data.finishesIn(year).length} books finished${ids.length > 24 ? ' · a selection of 24' : ''}',
+      '${data.finishesIn(year).length} books finished',
       const Offset(40, 102),
       640,
       20,
@@ -149,7 +158,13 @@ class ShareImage {
       );
     }
     _text(canvas, 'My reading library', Offset(40, height - 42.0), 640, 16);
-    await _share(recorder, 720, height, 'reading-shelf', origin);
+    await _share(
+      recorder,
+      (720 * scale).round(),
+      (height * scale).round(),
+      'reading-shelf',
+      origin,
+    );
   }
 
   static Future<void> _share(

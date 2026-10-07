@@ -130,7 +130,7 @@ Cover, title, author, status chip, and the main action (Update page / Start read
 
 ## Sharing
 
-On-device images only, through the native share sheet; nothing is uploaded and the reader chooses when. **Share book** (finished books): a 600 x 800 card with the cover, title, and author. **Share shelf** (Journal): a yearly grid of up to 24 covers (labelled as a selection when there are more). The share sheet is anchored to the button (needed on iPad).
+On-device images only, through the native share sheet; nothing is uploaded and the reader chooses when. **Share book** (finished books): a 600 x 800 card with the cover, title, and author. **Share shelf** (Journal): a yearly grid of every finished book's cover, in the order chosen in the Library (Title, Author, or Recent; the saved choice), four per row. A very large shelf is drawn smaller rather than cut short. The share sheet is anchored to the button (needed on iPad).
 
 ## Friends (optional) (`/friends`, `/friends/:id`)
 
