@@ -215,3 +215,26 @@ class ShelfIn(Strict):
 class ShelfOut(BaseModel):
     books: list[ShelfBook]
     updated_at: datetime
+
+
+# --- book search ------------------------------------------------------------
+
+
+class BookSearchIn(Strict):
+    # Sent in the body, not the URL, so the text never reaches a request log.
+    q: str = Field(min_length=1, max_length=200)
+
+
+class BookOut(BaseModel):
+    title: str
+    author: str
+    page_count: int | None
+    first_publish_year: int | None
+    language: str | None
+    cover_id: int | None
+
+
+class BookSearchOut(BaseModel):
+    # True when nothing matched every word, so these are only close matches.
+    approximate: bool
+    books: list[BookOut]

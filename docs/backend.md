@@ -13,7 +13,7 @@ Public address: `https://ai.duk-tech.com/books-api/` (nginx strips the prefix; t
 | Passwords, tokens | argon2id (`argon2-cffi`); short-lived JWT access tokens (`PyJWT`, HS256); rotating opaque refresh tokens |
 | Phone numbers | `phonenumbers` to normalise, HMAC-SHA256 with a server-side pepper |
 | Runtime | Docker Compose (`server/docker-compose.yml`): `db` (no published port) and `api` (bound to `127.0.0.1:8300`) |
-| Tests | pytest against a real Postgres (46 tests) |
+| Tests | pytest against a real Postgres (56 tests) |
 
 Pinned versions are in `server/requirements.txt` and `server/requirements-dev.txt`.
 
@@ -35,6 +35,8 @@ Pinned versions are in `server/requirements.txt` and `server/requirements-dev.tx
 | `server/app/routers/people.py` | username lookup, contact matching |
 | `server/app/routers/friends.py` | friend requests, friends, blocks |
 | `server/app/routers/shelf.py` | publish and read shelves |
+| `server/app/routers/books.py` | book search for the app (no sign-in) |
+| `server/app/booksearch.py` | Open Library search rules, stop words, in-memory cache |
 | `server/migrations/` | Alembic (`0001_initial_schema.py`) |
 | `server/tests/` | pytest suite |
 | `server/Dockerfile`, `server/docker-compose.yml`, `server/.env.example` | packaging and secrets template |
@@ -53,7 +55,7 @@ All ids are UUIDs. Foreign keys cascade on delete, so deleting a user removes ev
 
 ## API
 
-Bearer access token on everything except `/auth/*` and `/healthz`. Errors are `{"detail": ...}`.
+Bearer access token on everything except `/auth/*`, `/books/search` and `/healthz`. Errors are `{"detail": ...}`.
 
 | Method and path | Purpose |
 | --- | --- |
@@ -72,6 +74,7 @@ Bearer access token on everything except `/auth/*` and `/healthz`. Errors are `{
 | `POST /friends/requests/{id}/accept`, `DELETE /friends/requests/{id}` | accept; decline or cancel |
 | `GET /blocks`, `PUT /blocks/{id}`, `DELETE /blocks/{id}` | block (also removes any friendship), unblock |
 | `PUT /me/shelf`, `GET /me/shelf`, `DELETE /me/shelf` | publish, read, unpublish your snapshot |
+| `POST /books/search` | `{q}` (1 to 200 chars); `{approximate, books: [{title, author, page_count, first_publish_year, language, cover_id}]}`. No sign-in. 502 when Open Library cannot be reached. See "Book search" |
 | `GET /friends/{id}/shelf` | a friend's snapshot; 404 for anyone who is not an accepted friend, and for friends who have not published |
 
 Another person is only ever shown as `{id, username, display_name}`. Email and phone are never returned to anyone but their owner, and the phone is never returned at all.
@@ -82,9 +85,17 @@ A list of books, each with `id`, `title`, `author`, `status` (`reading`, `want_t
 
 Unknown fields are rejected with 422 rather than ignored. Notes, pins, sessions and covers have no field, so a client bug cannot upload a private note. A friend's shelf is shown to the reader as that friend's data; it never enters the reader's own statistics, journal or keepsakes (the rules in `features.md` about invented activity apply).
 
+## Book search
+
+The app's online search goes through `POST /books/search` so the search rules can be fixed on the server without an app release (D37). The server queries `openlibrary.org/search.json` with its own user agent: the exact text first (or `isbn:` for an ISBN), then, if a query of two or more real words matches nothing, an any-word retry (`a OR b`) labelled `approximate`. Words under 3 letters and common words (`STOP_WORDS`: English, Romanian, a few French, German, Spanish) are left out of the retry, because an any-word query with "the" makes Open Library answer 500 after about 10 s. A failed retry returns the empty exact result; a failed exact search is 502, and the app then asks Open Library itself.
+
+- **No sign-in**, because the app works without an account and an account would tie searches to a person. Rate limit 120 per address per hour.
+- **The text is in the body, not the URL**, so nginx and uvicorn request logs show only `POST /books/search`. It is never written to the database (tested); answers are cached in memory for 6 hours (500 entries, per worker, lost on restart). Failures are not cached.
+- Only a cover id is returned; the app builds the cover address itself and downloads covers from Open Library directly.
+
 ## Security and privacy design
 
-- **Rate limits** (stored in Postgres, shared by every worker, counted even when the request fails): login 10 per email and 60 per address per 15 minutes; register 20 per address per hour; refresh 120 per address per 15 minutes; username lookup 60 per hour; contact matching 20 calls per hour and 3000 numbers per day; friend requests 50 per day; phone changes 10 per day.
+- **Rate limits** (stored in Postgres, shared by every worker, counted even when the request fails): login 10 per email and 60 per address per 15 minutes; register 20 per address per hour; refresh 120 per address per 15 minutes; username lookup 60 per hour; contact matching 20 calls per hour and 3000 numbers per day; friend requests 50 per day; phone changes 10 per day; book search 120 per address per hour.
 - **Discovery is exact-match only.** There is no name, prefix or substring search, so the user base cannot be listed. Phone discovery is opt-in and off by default.
 - **Phone numbers** are normalised to E.164 and stored only as an HMAC with `PHONE_PEPPER`. Contact sync sends raw numbers over HTTPS (a hash made on the phone would be trivially reversible, because phone numbers are guessable); the server hashes them, compares, answers, and keeps nothing: the numbers are not written to any table (tested against the database), and the service does not log request bodies (uvicorn logs the request line only). A match only ever produces a name that can be asked to be friends; nothing is shared until the other person accepts.
 - **Blocks** hide both people from each other in lookup and contact matching, and a request to or from a blocked person answers 404, the same as an unknown id.

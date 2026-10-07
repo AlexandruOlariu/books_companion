@@ -59,7 +59,8 @@ Capabilities, then `flutter build ipa --release`. Signing style is Automatic and
 no team is committed.
 
 Not yet done (needs Xcode): an app-level `PrivacyInfo.xcprivacy` added to the
-Runner target. The app code itself uses no tracking and collects nothing, but
+Runner target. The app code itself uses no tracking; it sends only the optional account data
+and the online search text (not stored, see `store-privacy.md`), but
 confirm the archive's generated privacy report in Xcode before submitting.
 
 ## 3a. Automated releases (GitHub Actions)

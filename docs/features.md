@@ -83,7 +83,7 @@ Four explicit precisions, no default: **Exact date** (date picker, cannot be in 
 
 Reached from **Search online** in the add form. Search by title, author, or ISBN (10 or 13 digits, hyphens allowed). It runs only when the reader taps Search or presses the keyboard search key; nothing is sent while typing. The field is pre-filled from the form's title and author.
 
-- Source: Open Library (`openlibrary.org`). Only the typed text is sent. The screen says so.
+- Source: Open Library (`openlibrary.org`), searched through the Reading Library server, which needs no account; if the server cannot be reached, the app asks Open Library directly. Only the typed text is sent. The screen says so: "Searches Open Library through the Reading Library server. Only your search text is sent, and only when you search." Covers always come straight from Open Library.
 - Results show thumbnail, title, author, first-publication year, page count, and **no cover** when there is none. A note says page counts are typical across editions.
 - **Fallback for misspellings:** if nothing matches every word and at least two words of three or more letters were typed (common words such as "the", "and", "din", "pentru" do not count), a looser any-word search runs and the screen says "No exact match. These are the closest results...". Never for ISBNs or single words.
 - Choosing a result downloads its cover into app storage (validated by image content, 5 MB limit), fills the form, and records the edition source as `open_library`. Language is prefilled only when the work lists exactly one language (a work's list covers all editions).

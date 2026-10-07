@@ -5,7 +5,7 @@
 ```sh
 ./tool/flutterw analyze
 dart format --output=none --set-exit-if-changed lib test integration_test
-./tool/flutterw test                                            # 135 unit and widget tests
+./tool/flutterw test                                            # 138 unit and widget tests
 ./tool/flutterw test integration_test/core_flows_test.dart -d <android-device>
 ./tool/flutterw build apk --debug
 ./tool/check_docs.sh                                            # docs cover the code
@@ -13,7 +13,7 @@ dart format --output=none --set-exit-if-changed lib test integration_test
 
 `dart format` is run with the SDK's `dart` (`flutter format` no longer exists). The integration test installs a test build, so it **wipes the app's data on the device**; re-run `lib/dev_seed.dart` afterwards if a seeded library is wanted.
 
-Latest results (2026-10-07): analyzer clean; format clean; 135 unit and widget tests pass; the emulator integration test passes; the debug APK and a release APK (debug-signed) build.
+Latest results (2026-10-07): analyzer clean; format clean; 138 unit and widget tests pass; the emulator integration test passes; the debug APK and a release APK (debug-signed) build.
 
 ## Test inventory
 
@@ -25,6 +25,7 @@ Latest results (2026-10-07): analyzer clean; format clean; 135 unit and widget t
 | `test/search_test.dart` | 7 | diacritics, word order, ranking, a filter hiding a match (phone-sized screen), search miss, clear button |
 | `test/shelf_test.dart` | 9 | keepsake thresholds, row packing (no overflow, order, tap sizes, evenly spread keepsakes), keepsake semantics, hidden under a filter |
 | `test/lookup_test.dart` | 7 | Open Library parsing, ISBN query, misspelling fallback (stop words left out), failures, real-image check, against a local HTTP server |
+| `test/server_lookup_test.dart` | 3 | search through the server: only `{q}` in a POST body, approximate flag, cover URLs built on the device; fallback to Open Library on 502, 429, 404, a bad body, and an unreachable server |
 | `test/online_and_draft_widget_test.dart` | 6 | search to filled form, no-cover message, cover preview, offline fallback, book draft restore, pin draft restore and clear |
 | `test/journal_buckets_test.dart` | 4 | months hold only remembered months in order; a year-only finish is never in a month; years newest first with undated apart; every finish counted exactly once |
 | `test/journal_widget_test.dart` | 4 | All time year rows; a year's month tiles and a month sheet that excludes year-only books; Days explains itself and past finishes do not count; History groups |
@@ -39,7 +40,7 @@ Latest results (2026-10-07): analyzer clean; format clean; 135 unit and widget t
 | `test/friends_widget_test.dart` | 23 | Settings entry (hidden in the demo); the sign-in panel states what is sent; create account, missing fields, wrong password; sharing asks first and sends only books and dates, cancel sends nothing, an empty library, stop sharing; accept a request; find by username sends a request; contacts explained before any permission, refusal explained, existing friends not re-offered; phone number and the findable switch; sign out; delete account needs the password; a friend's shelf shows dates as shared, never touches the reader's own library, nothing-shared state, remove and block; 200% text on a phone-height view. Uses `test/support/fake_friends_api.dart` |
 | `integration_test/core_flows_test.dart` | 1 | on an Android emulator: Library, Reading, update page, add pin, Journal history, add a past book with year-only precision; asserts the stored value is `2019` and the session count is unchanged |
 
-### Server tests (`server/tests/`, pytest, 46 tests)
+### Server tests (`server/tests/`, pytest, 56 tests)
 
 Run from `server/` with a Postgres test database (see `backend.md`); the suite builds the schema from the Alembic migrations and truncates between tests. CI runs it in the `server-tests` job. They are separate from the Flutter count above.
 
@@ -50,6 +51,7 @@ Run from `server/` with a Postgres test database (see `backend.md`); the suite b
 | `server/tests/test_discovery.py` | 9 | exact username lookup only, nothing but id, username and display name exposed, opt-in contact matching, number formats, self and blocked excluded, the daily number budget, oversized lists, contacts not stored |
 | `server/tests/test_friends.py` | 10 | request and accept, only the asked person can accept, asking back accepts, duplicates, decline and cancel, removal, blocking, privacy of the lists |
 | `server/tests/test_shelf.py` | 9 | publish replaces, only accepted friends read it, unfriending or unpublishing hides it, private fields rejected, date precision rules, finishes versus status, future dates, limits, sign-in required |
+| `server/tests/test_books.py` | 10 | book search without an account, result shape, ISBN query, any-word retry without stop words, no retry for one real word, a failed retry is not an error, 502 when Open Library is down and failures not cached, cache by normalised text, input validation, search text never stored, per-address rate limit |
 | `server/tests/test_migrations.py` | 3 | models equal the migrations, health check, interactive docs off |
 | `server/tests/conftest.py` | n/a | fixtures; refuses a test database whose name does not end in `_test` |
 

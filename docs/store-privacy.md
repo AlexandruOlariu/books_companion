@@ -9,11 +9,14 @@ form and check any answer you are unsure of.
 - No analytics, advertising, crash reporting, or third-party SDKs that transmit
   data. An account is **optional** (Friends); the app is fully usable without it.
 - The library, notes, pins, sessions, and covers stay on the device. Without an
-  account, nothing is sent to the developer.
-- Network requests are all user-initiated: search text to openlibrary.org when
-  the reader taps Search (and the chosen cover download), and, only after the
-  reader creates an account in Friends, requests to the developer's server
-  (`https://ai.duk-tech.com/books-api/`).
+  account, the only thing sent to the developer is the online search text,
+  which is not stored (see below).
+- Network requests are all user-initiated: search text to the developer's
+  server (`https://ai.duk-tech.com/books-api/books/search`, no account, which
+  queries openlibrary.org; directly to openlibrary.org if the server cannot be
+  reached) when the reader taps Search, the chosen cover download from
+  openlibrary.org, and, only after the reader creates an account in Friends,
+  the account requests to the same server.
 - With an account, the server receives: first and last name, username, email,
   a password hash, friend requests and friends, and, only when the reader taps
   Share my shelf, each book's title, author, status, and finish dates. If the
@@ -43,11 +46,12 @@ form and check any answer you are unsure of.
   page where an account can be deleted. **There is no web deletion page yet**; it
   must be added (it can be a simple page explaining how to delete in the app and
   how to ask the developer to delete an account) before submitting.
-- The search text goes to a third-party service the reader chose to query, with
-  no identifier attached. Decide whether to declare it (for example as in-app
-  search history, "not collected by developer, shared with Open Library") or
-  rely on Play's exemption for user-initiated transfers. Declaring it is the
-  conservative choice.
+- The search text now reaches the developer's server (processed in real time,
+  not stored, cached in memory up to 6 hours, never linked to an account) and is
+  passed to Open Library. Declare it as **App activity > In-app search
+  history**, collected, processed ephemerally, not shared for advertising,
+  required for the search feature (optional to use). The IP address is used
+  only for rate limiting and kept up to a day.
 - Data encrypted in transit: **Yes** (HTTPS). Deletion request: in-app deletion
   (Friends > Delete my account) plus a web page (see above).
 
@@ -60,9 +64,10 @@ form and check any answer you are unsure of.
   published list of books and dates). The contact phone numbers sent for
   matching are processed in real time and not stored; Apple does not count data
   that is not retained as collected, but re-read the definition when filling
-  the form and declare it if in doubt. The Open Library search text is a
-  separate item to weigh; if in doubt, declare "Search History, not linked to
-  identity, not used for tracking".
+  the form and declare it if in doubt. The online search text reaches the
+  developer's server (not stored, in-memory cache up to 6 hours, no account
+  needed): declare "Search History, not linked to identity, not used for
+  tracking, App Functionality".
 - **Account deletion** (App Store guideline 5.1.1(v)): in-app deletion is
   present (Friends > Delete my account).
 - `NSContactsUsageDescription` is set; the permission is requested only when the

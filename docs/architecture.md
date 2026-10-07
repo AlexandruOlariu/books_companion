@@ -55,7 +55,7 @@ presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepos
 | `demoProvider` | true in the demo build (labels the app bar) |
 | `draftStoreProvider` | in-memory by default; file-backed in `main.dart` |
 | `preferencesProvider` | in-memory by default; file-backed (`preferences.json` in the support directory) in `main.dart`; holds the shelf's sort choice |
-| `bookLookupProvider` | `OpenLibraryLookup`; tests override with a fake |
+| `bookLookupProvider` | `ServerBookLookup` (server first, `OpenLibraryLookup` as fallback); tests override with a fake |
 | `sessionStoreProvider` | in-memory by default; `SecureSessionStore` (secure storage) in `main.dart`; holds the friends sign-in tokens |
 | `friendsApiProvider` | `HttpFriendsApi` on the session store; tests override with a fake |
 | `contactsSourceProvider` | `DeviceContactsSource` (permission and numbers); tests override with a fake |
@@ -110,6 +110,8 @@ Envelope: `{ "format": "reading-library", "version": 1, "data": { "version": 1, 
 ## Online lookup (`lib/features/book_search`)
 
 `BookLookup` (domain) has `search(query)` and `fetchCover(suggestion)`. `OpenLibraryLookup` (data) uses `dart:io` `HttpClient` with an 8 s connect timeout, 15 s response timeout, size caps (2 MB JSON, 5 MB image), a `ReadingLibrary/0.1` user agent, and no identifiers. Cover bytes are accepted only if they are JPEG or PNG by content. All failures become a friendly `LookupException`; the looser retry for misspellings never raises an error and leaves out a short stop-word list (English, Romanian, a few French, German and Spanish articles), because an any-word query containing "the" makes Open Library return HTTP 500 after about 10 s. Hosts are injectable for tests.
+
+`ServerBookLookup` (data) is what the app uses. It sends `POST {HttpFriendsApi.defaultOrigin}/books/search` with `{"q": text}` (5 s connect, 20 s response, 1 MB cap, no token or identifier); the server runs the same exact-then-any-word logic (`backend.md`, Book search) and returns books with a `cover_id`. The cover and thumbnail URLs are built on the device from that id with `OpenLibraryLookup.coverUrlFor`, so a cover is only ever downloaded from Open Library's cover host, and `fetchCover` is delegated to `OpenLibraryLookup`. Any server failure (unreachable, timeout, non-200 including 429, bad body) falls back to `OpenLibraryLookup.search`, so search works as before when the server is down.
 
 ## Shelf rendering (`lib/features/library/presentation/shelf.dart`)
 
@@ -170,7 +172,8 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/features/library/presentation/keepsakes.dart` | keepsake enum, thresholds, painters |
 | `lib/features/library/presentation/book_form.dart` | add and edit form, search entry, drafts |
 | `lib/features/book_search/domain/book_lookup.dart` | lookup interface, suggestion, ISBN detection |
-| `lib/features/book_search/data/open_library_lookup.dart` | Open Library client |
+| `lib/features/book_search/data/open_library_lookup.dart` | Open Library client (direct fallback, covers) |
+| `lib/features/book_search/data/server_book_lookup.dart` | search through the Reading Library server, falling back to Open Library |
 | `lib/features/book_search/presentation/book_search_screen.dart` | online search screen |
 | `lib/features/reading/presentation/reading_screen.dart` | Reading tab |
 | `lib/features/reading/presentation/reading_actions.dart` | page, session, pin, finish sheets with drafts |

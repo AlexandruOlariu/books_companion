@@ -77,7 +77,7 @@ class _BookSearchScreenState extends ConsumerState<BookSearchScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Searches Open Library. Only your search text is sent, and only when you search.',
+                  'Searches Open Library through the Reading Library server. Only your search text is sent, and only when you search.',
                   style: TextStyle(color: RoomColors.muted, fontSize: 13),
                 ),
                 const SizedBox(height: 12),

@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
-
 import '../../../core/storage/cover_store.dart';
 import '../domain/book_lookup.dart';
 
@@ -133,8 +131,10 @@ class OpenLibraryLookup implements BookLookup {
     return docs.map(_suggestion).whereType<BookSuggestion>().toList();
   }
 
-  @visibleForTesting
-  String coverUrlFor(int id) => '$_coverOrigin/b/id/$id-L.jpg?default=false';
+  /// `L` is the full cover, `S` the thumbnail. Also used for results that
+  /// come from the Reading Library server, which sends only the cover id.
+  String coverUrlFor(int id, {String size = 'L'}) =>
+      '$_coverOrigin/b/id/$id-$size.jpg?default=false';
 
   BookSuggestion? _suggestion(dynamic doc) {
     if (doc is! Map) return null;
@@ -158,12 +158,8 @@ class OpenLibraryLookup implements BookLookup {
       language: languages is List && languages.length == 1
           ? languageName(languages.first)
           : null,
-      coverUrl: cover is int
-          ? '$_coverOrigin/b/id/$cover-L.jpg?default=false'
-          : null,
-      thumbnailUrl: cover is int
-          ? '$_coverOrigin/b/id/$cover-S.jpg?default=false'
-          : null,
+      coverUrl: cover is int ? coverUrlFor(cover) : null,
+      thumbnailUrl: cover is int ? coverUrlFor(cover, size: 'S') : null,
     );
   }
 

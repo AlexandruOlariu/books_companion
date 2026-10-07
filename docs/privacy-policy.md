@@ -26,13 +26,21 @@ files you saved elsewhere remain until you delete them.
 ## What leaves your device
 
 Only when you tap **Search** in the online book search, the text you typed is
-sent to Open Library (openlibrary.org, operated by the Internet Archive) to
-find matching books. When you pick a result, the app downloads that book's cover
-image from Open Library. Like any web request, this reveals your IP address to
-Open Library. Open Library's own privacy policy applies to that service. The
-app's online search sends nothing else, and does not send your library,
-notes, or any identifier. You can use the app fully without ever using online
-search.
+sent to the developer's server (`ai.duk-tech.com`), which passes it to Open
+Library (openlibrary.org, operated by the Internet Archive) to find matching
+books and sends the results back. No account is needed for this. The server
+does not store the search text: it is not written to a database or to logs; recent
+searches and their results are kept only in memory, for up to 6 hours, so the
+same search is not sent to Open Library again. Your IP address is used to limit
+how many searches can be made per hour and is kept for up to a day for that
+purpose only. Open Library sees the search coming from the developer's server,
+not from you. If the developer's server cannot be reached, the app sends the
+search to Open Library directly, which then sees your IP address. When you pick
+a result, the app downloads that book's cover image from Open Library directly,
+which reveals your IP address to Open Library. Open Library's own privacy
+policy applies to that service. The app's online search sends nothing else, and
+does not send your library, notes, or any identifier. You can use the app fully
+without ever using online search.
 
 ## Optional: friends and sharing
 
@@ -83,7 +91,7 @@ the account cannot be recovered (you can create a new one).
 **Sharing with others.** The developer does not sell data or share it with
 advertisers or analytics providers. The server does not use third-party
 services. Open Library (above) receives only your book search text, as
-described.
+described, normally from the developer's server rather than from your device.
 
 ## Photos
 

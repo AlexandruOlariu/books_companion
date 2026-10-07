@@ -2,6 +2,12 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-07: online search through the server
+
+- Online search now goes through the Reading Library server (`POST /books/search`, no account needed), so search fixes no longer need an app release. If the server cannot be reached, the app asks Open Library directly, as before. Covers still come straight from Open Library (D37).
+- New: `server/app/booksearch.py`, `server/app/routers/books.py` (10 server tests), `lib/features/book_search/data/server_book_lookup.dart` (3 Flutter tests). The search screen note now reads "Searches Open Library through the Reading Library server...".
+- **Privacy change:** the search text now reaches the developer's server even without an account. It is sent in the request body (not logged), never stored, cached in memory for up to 6 hours. `privacy-policy.md` and `store-privacy.md` updated. Deployed to `https://ai.duk-tech.com/books-api/` and checked there.
+
 ## 2026-10-07: online search fix for titles with "the"
 
 - The misspelling retry in online search now leaves out common words ("the", "and", "din", ...). A typo in a title containing "The" (for example "Frieda The Coworker") used to send `... OR The OR ...`, which Open Library failed to answer, so nothing was shown. Now it finds *The Coworker* by Freida McFadden (D18). Not yet checked on the emulator.

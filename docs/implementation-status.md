@@ -81,6 +81,7 @@ See the final verification notes below for execution results. Tests cover partia
 
 ## Executed checks — backend pass (7 October 2026)
 
+- 2026-10-07, search through the server: 138 Flutter tests and 56 server tests pass, analyzer and format clean. `POST /books/search` deployed and called at `https://ai.duk-tech.com/books-api/`; the uvicorn log shows only the request line, not the text. On the emulator, "Frieda The Coworker" in Search online returned *The Coworker* by Freida McFadden first, labelled as a close match, through the server. The fallback to Open Library is covered by tests, not tried on a device.
 - 46 server tests pass against PostgreSQL 17 (a throwaway container). The Docker image was built and the stack started with Compose; a scripted run against `127.0.0.1:8300` registered two users, sent and accepted a friend request, published a shelf, read it as the friend, then deleted both accounts (the `users` table ended empty). The API port was confirmed unreachable from the LAN address.
 - The nginx include was installed with `server/deploy/install-nginx.sh` and `https://ai.duk-tech.com/books-api/healthz` answered 200 from outside, with `/docs` 404 and `/me` without a token 401. nginx's `-t` printed warnings about a second `server_name ai.duk-tech.com` in `sites-enabled/default` (not introduced by this change; the first definition wins). Phone matching has only been tested with the Romanian numbering plan and E.164 input. No load test. Phone and email are unverified (see `backend.md`, known gaps).
 
