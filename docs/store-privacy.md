@@ -7,19 +7,27 @@ form and check any answer you are unsure of.
 ## Facts
 
 - No analytics, advertising, crash reporting, or third-party SDKs that transmit
-  data. An account is **optional** (Friends); the app is fully usable without it.
-- The library, notes, pins, sessions, and covers stay on the device. Without an
-  account, the only thing sent to the developer is the online search text,
-  which is not stored (see below).
-- Network requests are all user-initiated: search text to the developer's
-  server (`https://ai.duk-tech.com/books-api/books/search`, no account, which
+  data. An account is **required**: the app opens on the sign-in page, because
+  the library is saved to the account (decision D38). The demo build is the
+  only part that works without one.
+- The library, notes, pins, and sessions are stored on the device and saved to
+  the reader's account on the developer's server in the background (readable by
+  the developer, not end-to-end encrypted). Cover images chosen from the photo
+  library never leave the device; for online covers only the Open Library
+  address is saved.
+- Network requests: search text to the developer's server
+  (`https://ai.duk-tech.com/books-api/books/search`, no account, which
   queries openlibrary.org; directly to openlibrary.org if the server cannot be
-  reached) when the reader taps Search, the chosen cover download from
-  openlibrary.org, and, only after the reader creates an account in Friends,
-  the account requests to the same server.
-- With an account, the server receives: first and last name, username, email,
-  a password hash, friend requests and friends, and, only when the reader taps
-  Share my shelf, each book's title, author, status, and finish dates. If the
+  reached) when the reader taps Search, cover downloads from openlibrary.org
+  (when a cover is chosen, and again on a phone that has a saved library but not
+  the file), and the account and library requests to the same server
+  (sign-in, saving the library after changes and when the app returns to the
+  foreground, friends).
+- The server receives: first and last name, username, email, a password hash,
+  **the whole library (books, finish dates, reading sessions, private notes and
+  pins, series, page counts, language, cover addresses)**, friend requests and
+  friends, and, only when the reader taps Share my shelf, each book's title,
+  author, status, and finish dates (the part friends see). If the
   reader adds a phone number, a keyed hash of it. Contact phone numbers are
   sent for matching when the reader taps Find friends from contacts and are not
   stored.
@@ -31,12 +39,14 @@ form and check any answer you are unsure of.
 
 ## Google Play — Data safety
 
-- Collects or shares data with the developer: **Yes, only if the reader creates
-  a Friends account.** Declare, as collected and linked to the user, optional,
-  for app functionality: **Name**, **Email address**, **User IDs** (username),
-  **Other user-generated content** (the published list of books and dates), and
-  **Phone number** (hashed; only if added). Not shared with third parties, not
-  used for advertising or analytics.
+- Collects or shares data with the developer: **Yes, for every user (an account
+  is required).** Declare, as collected and linked to the user, required for app
+  functionality: **Name**, **Email address**, **User IDs** (username),
+  **Other user-generated content** (the library: books, reading dates, sessions,
+  and private notes), **App activity** (reading sessions, if the form counts
+  them separately), and, optional, **Phone number** (hashed; only if added).
+  Not shared with third parties, not used for advertising or analytics. Say
+  that data is **not** end-to-end encrypted.
 - **Contacts:** the phone numbers of contacts are sent to the server for
   matching only and are not stored. Declare "Contacts" as accessed; weigh
   whether Play's wording of "collected" covers data processed transiently and
@@ -52,16 +62,19 @@ form and check any answer you are unsure of.
   history**, collected, processed ephemerally, not shared for advertising,
   required for the search feature (optional to use). The IP address is used
   only for rate limiting and kept up to a day.
-- Data encrypted in transit: **Yes** (HTTPS). Deletion request: in-app deletion
-  (Friends > Delete my account) plus a web page (see above).
+- Data encrypted in transit: **Yes** (HTTPS). Data is not encrypted end to end.
+  Deletion request: in-app deletion (Friends > Delete my account, which also
+  erases the saved library) plus a web page (see above).
 
 ## Apple — App Privacy
 
 - Tracking: **No**. No tracking domains.
-- Data collected (only with a Friends account), linked to the user, for App
-  Functionality, not used for tracking: **Contact Info** (name, email address,
-  phone number if added), **Identifiers** (username), **User Content** (the
-  published list of books and dates). The contact phone numbers sent for
+- Data collected (every user, since an account is required), linked to the
+  user, for App Functionality, not used for tracking: **Contact Info** (name,
+  email address, phone number if added), **Identifiers** (username), **User
+  Content** (the whole library including private notes, and the published list
+  of books and dates), **Usage Data > Product Interaction** (reading sessions,
+  if counted). The contact phone numbers sent for
   matching are processed in real time and not stored; Apple does not count data
   that is not retained as collected, but re-read the definition when filling
   the form and declare it if in doubt. The online search text reaches the
@@ -69,7 +82,10 @@ form and check any answer you are unsure of.
   needed): declare "Search History, not linked to identity, not used for
   tracking, App Functionality".
 - **Account deletion** (App Store guideline 5.1.1(v)): in-app deletion is
-  present (Friends > Delete my account).
+  present (Friends > Delete my account). It erases the saved library too.
+  Because sign-in is now required to use the app, Apple's sign-in rules apply:
+  the app offers its own email and password sign-in only (no third-party login),
+  so Sign in with Apple is not required.
 - `NSContactsUsageDescription` is set; the permission is requested only when the
   reader taps Find friends from contacts.
 - Photos: access is only through the system picker when choosing a cover.

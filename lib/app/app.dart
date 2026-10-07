@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,18 +13,83 @@ import '../features/library/presentation/book_form.dart';
 import '../features/library/presentation/library_screen.dart';
 import '../features/reading/presentation/reading_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/sync/presentation/conflict_dialog.dart';
+import '../features/sync/presentation/sync_controller.dart';
+import '../features/sync/presentation/welcome_screen.dart';
 import 'providers.dart';
 
-class ReadingLibraryApp extends StatefulWidget {
+class ReadingLibraryApp extends ConsumerStatefulWidget {
   const ReadingLibraryApp({super.key});
   @override
-  State<ReadingLibraryApp> createState() => _ReadingLibraryAppState();
+  ConsumerState<ReadingLibraryApp> createState() => _ReadingLibraryAppState();
 }
 
-class _ReadingLibraryAppState extends State<ReadingLibraryApp> {
+class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
+    with WidgetsBindingObserver {
+  // Tells the router to look again when the sign-in state changes.
+  final _signInChanged = ValueNotifier(0);
+
+  /// With accounts required, nothing opens until someone is signed in. The
+  /// answer comes from the device, so it is immediate and works offline.
+  String? _gate(GoRouterState state) {
+    if (!ref.read(accountRequiredProvider) || ref.read(demoProvider)) {
+      return null;
+    }
+    final signedIn = ref.read(signedInProvider).value;
+    final at = state.uri.path;
+    if (signedIn == null) return at == '/loading' ? null : '/loading';
+    if (!signedIn) return at == '/welcome' ? null : '/welcome';
+    return at == '/welcome' || at == '/loading' ? '/library' : null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    ref.listenManual(signedInProvider, (_, next) {
+      _signInChanged.value++;
+      if (next.value == true) {
+        unawaited(ref.read(syncControllerProvider.notifier).sync());
+      }
+    }, fireImmediately: true);
+    // A library on the phone and one on the account that cannot be combined:
+    // the reader decides which to keep, wherever they are in the app.
+    ref.listenManual(syncControllerProvider, (previous, next) {
+      if (next.phase != SyncPhase.conflict ||
+          previous?.phase == SyncPhase.conflict ||
+          next.conflict == null) {
+        return;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final context = _navigatorKey.currentState?.overlay?.context;
+        if (mounted && context != null && context.mounted) {
+          unawaited(showSyncConflict(context, ref, next.conflict!));
+        }
+      });
+    }, fireImmediately: true);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(ref.read(syncControllerProvider.notifier).sync());
+    }
+  }
+
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
   late final router = GoRouter(
+    navigatorKey: _navigatorKey,
     initialLocation: '/library',
+    refreshListenable: _signInChanged,
+    redirect: (context, state) => _gate(state),
     routes: [
+      GoRoute(
+        path: '/loading',
+        builder: (_, _) =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
+      ),
+      GoRoute(path: '/welcome', builder: (_, _) => const WelcomeScreen()),
       ShellRoute(
         builder: (context, state, child) =>
             _RoomShell(path: state.uri.path, child: child),
@@ -87,7 +154,9 @@ class _ReadingLibraryAppState extends State<ReadingLibraryApp> {
   );
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     router.dispose();
+    _signInChanged.dispose();
     super.dispose();
   }
 
@@ -105,7 +174,9 @@ class _RoomShell extends ConsumerWidget {
   final Widget child;
   const _RoomShell({required this.path, required this.child});
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Scaffold(
+  Widget build(BuildContext context, WidgetRef ref) => _scaffold(context, ref);
+
+  Widget _scaffold(BuildContext context, WidgetRef ref) => Scaffold(
     appBar: AppBar(
       toolbarHeight: 56,
       title: Row(

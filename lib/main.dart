@@ -17,6 +17,7 @@ import 'core/storage/draft_store.dart';
 import 'core/storage/preferences_store.dart';
 import 'core/storage/session_store.dart';
 import 'features/library/data/local_library_repository.dart';
+import 'features/sync/data/syncing_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +37,8 @@ Future<void> main() async {
     );
     final repository = LocalLibraryRepository(db);
     await repository.load();
+    // Every change made through the app is saved to the account soon after.
+    final changes = LibraryChangeHook();
     final support = await getApplicationSupportDirectory();
     final drafts = FileDraftStore(File(p.join(support.path, 'drafts.json')));
     // Android may kill a backgrounded process without further callbacks.
@@ -50,7 +53,12 @@ Future<void> main() async {
     runApp(
       ProviderScope(
         overrides: [
-          repositoryProvider.overrideWithValue(repository),
+          repositoryProvider.overrideWithValue(
+            SyncingRepository(repository, changes),
+          ),
+          syncRepositoryProvider.overrideWithValue(repository),
+          libraryChangeHookProvider.overrideWithValue(changes),
+          accountRequiredProvider.overrideWithValue(true),
           draftStoreProvider.overrideWithValue(drafts),
           sessionStoreProvider.overrideWithValue(SecureSessionStore()),
           preferencesProvider.overrideWithValue(

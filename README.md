@@ -1,6 +1,6 @@
 # Reading Library
 
-A Flutter reading journal for Android and iOS. A warm-paper bookshelf, private page pins, and an honest distinction between remembered reading history and logged activity. Opens to an empty library; no account, analytics, or network connection is required. An optional Friends feature (accounts, friends, a published shelf) uses a small server in `server/` (see `docs/backend.md`).
+A Flutter reading journal for Android and iOS. A warm-paper bookshelf, private page pins, and an honest distinction between remembered reading history and logged activity. Opens on an account page, then to your library: it is saved to your account in the background (and works offline), with no analytics. A small server in `server/` (see `docs/backend.md`) keeps accounts and saved libraries, and powers the optional Friends feature.
 
 ## Run
 
@@ -40,7 +40,7 @@ The sample library is created only by `lib/demo.dart`, `lib/dev_seed.dart`, and 
 
 `PartialDate` stores `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, or null alongside its precision. It never pads remembered years or months with invented days. `UserBook.currentPage` records position; `ReadingSession` records activity. Rereading keeps earlier completions.
 
-The database is schema version 2. Future upgrades must add an explicit non-destructive migration and an old-schema fixture test. Unknown upgrade paths fail instead of deleting a library. Cover imports are copied to the app documents directory. Android automatic cloud backup is disabled; the explicit local backup contains private notes and should be stored accordingly.
+The database is schema version 3. Future upgrades must add an explicit non-destructive migration and an old-schema fixture test. Unknown upgrade paths fail instead of deleting a library. Cover imports are copied to the app documents directory. Android automatic cloud backup is disabled; the explicit local backup contains private notes and should be stored accordingly.
 
 ## Validation
 

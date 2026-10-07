@@ -2,7 +2,7 @@
 
 This is the behavioural specification of the working POC, written from the code. It describes what exists, not what was planned (see `product-plan.md` for the original plan and `decisions.md` for where and why the build departs from it). Exact user-facing strings are quoted where tests or the design depend on them.
 
-**Product in one line:** a private, local-first reading journal for Android and iOS. No account, analytics, or required network. An optional account lets the reader find friends and share a list of what they have read (see Friends, and `backend.md` for the server). The reader records what they know and leaves unknown details unknown.
+**Product in one line:** a private reading journal for Android and iOS. The library is written to the phone first and saved to the reader's account in the background, so the app works offline and a lost or new phone does not lose it (see Account and saving, and `backend.md` for the server). No analytics. An account also lets the reader find friends and share a list of what they have read (see Friends). The reader records what they know and leaves unknown details unknown.
 
 ## Honesty rules (they shape every feature)
 
@@ -10,7 +10,7 @@ This is the behavioural specification of the working POC, written from the code.
 2. A remembered finish keeps its precision: `day`, `month`, `year`, or `unknown`. No fake dates are ever stored (a year-only record is `"2019"`, never January 1).
 3. Only logged **sessions** create activity: pages logged, minutes, calendar colour. Page updates, corrections, and past finishes never do.
 4. Shelf keepsakes are earned by the count of finished books only. Never by streaks, pages, time, or opening the app.
-5. Personal notes (pins) stay on the device and are never generated automatically.
+5. Personal notes (pins) are never generated automatically. They are kept on the phone and saved to the reader's own account; friends never see them.
 
 ## Wishlist
 
@@ -18,7 +18,7 @@ This is the behavioural specification of the working POC, written from the code.
 
 ## Navigation
 
-Three labelled bottom destinations: **Library**, **Reading**, **Journal**. A settings button (tune icon) sits in the top bar. A floating labelled **Add book** button is on Library. There is no onboarding. Signing in is optional and lives under Settings.
+Three labelled bottom destinations: **Library**, **Reading**, **Journal**. A settings button (tune icon) sits in the top bar. A floating labelled **Add book** button is on Library. There is no onboarding beyond the account page: until someone is signed in the app opens on it, and nothing else (see Account and saving). The demo build skips it.
 
 Routes: `/library`, `/reading`, `/journal?year=YYYY` (inside the shell); `/add` and `/add?past=true`, `/book/:id`, `/edit/:id`, `/settings`, `/friends`, `/friends/:id?name=` (full screens). Online search is a pushed screen, not a route.
 
@@ -132,27 +132,44 @@ Cover, title, author, status chip, and the main action (Update page / Start read
 
 On-device images only, through the native share sheet; nothing is uploaded and the reader chooses when. **Share book** (finished books): a 600 x 800 card with the cover, title, and author. **Share shelf** (Journal): a yearly grid of every finished book's cover, in the order chosen in the Library (Title, Author, or Recent; the saved choice), four per row. A very large shelf is drawn smaller rather than cut short. The share sheet is anchored to the button (needed on iPad).
 
-## Friends (optional) (`/friends`, `/friends/:id`)
+## Account and saving (`/welcome`, `/loading`)
 
-Reached from Settings ("Read with friends" > **Friends and sharing**). The whole app works without it, and nothing is sent until the reader acts. Screenshots: `screenshots/friends-sign-in.png`, `friends-signed-in.png`, `friends-share-dialog.png` (sample library; the account shown was a throwaway test account, deleted afterwards).
+An account is required (decision D38). Screenshots (sample library from `dev_seed`, a throwaway account): `screenshots/friends-sign-in.png` (the account page), `account-conflict.png`, `settings-saved.png`. With nobody signed in, every route redirects to `/welcome`: the sign-in and create-account panel, headed "Your reading room, kept safe." (`/loading` is a spinner shown for the moment it takes to read the device's session). The panel says what is saved: name, username and email, and the whole library (books, finish dates, reading sessions, private notes and pins), kept on the developer's server and **not end-to-end encrypted**; covers found online are fetched again from Open Library, photos the reader chose stay on the phone; friends only see what the reader publishes. Whether someone is signed in is known on the device, so the app opens offline once a session exists.
 
-**Signed out:** "Read alongside friends." with a plain statement of what is sent (name, username, and email at sign-up; and only if the reader publishes it, titles, authors, status, and finish dates; notes, pins, sessions, and covers never leave the device). **Sign in** or **Create account** (first name, last name, username, email, password). Usernames are 3 to 30 of letters, digits, `_`, `.`; passwords at least 10 characters. The panel warns there is no password reset. Errors are shown in words ("Wrong email or password.", "That username is already taken.").
+**What is saved, and when.** The library is written to the phone first, always. Shortly after a change (about 3 seconds after the last one, so a burst is one save), when the app returns to the foreground, and after signing in, the whole library is saved to the account. Offline, changes wait on the phone and are retried every minute and on return to the app; nothing is lost and nothing blocks. Settings shows "Saving to your account…", "Saved to your account at <date and time>.", "Waiting for a connection. Your changes are safe on this phone and will be saved when it is back.", or a problem, with **Save now**.
+
+**Two libraries.** The library is never merged (that would mean guessing dates and activity). The first time a phone meets an account:
+- the account has nothing: the phone's library is saved as the first copy;
+- the phone has no books: the account's library is downloaded;
+- both have books: a dialog, "Which library do you want to keep?", says "This phone has N books. Your account has M books, saved <date>." and that the other is replaced and cannot be brought back. **Keep this phone** replaces the account's copy; **Use my account** replaces the phone's. Nothing changes until the reader chooses, and saving pauses meanwhile.
+
+The same dialog appears if the account's copy changed (another phone) while this phone has unsaved changes. If the phone has none, the newer copy is simply downloaded.
+
+**Covers.** Only where an online cover came from (an Open Library address) is saved, never the picture. On a phone that has the book but not the file, the cover is fetched again after a download. A cover chosen from the gallery, and covers added before this feature existed, are not recoverable on another phone: the generated cover is shown there.
+
+**Signing out** returns to the account page and leaves the library on the phone. Signing in as the same account continues where it left off; as a different account it is the "first time" case above. **Deleting the account** erases the saved library from the server too; the library on the phone stays and is saved again if the reader makes a new account.
+
+## Friends (`/friends`, `/friends/:id`)
+
+Reached from Settings ("Read with friends" > **Friends and sharing**). Nothing is shared with friends until the reader acts. Screenshots: `screenshots/friends-sign-in.png`, `friends-signed-in.png`, `friends-share-dialog.png` (sample library; the account shown was a throwaway test account, deleted afterwards).
+
+**Signed out:** the same account panel as `/welcome` (it can only be seen briefly, since the app requires an account). **Sign in** or **Create account** (first name, last name, username, email, password). Usernames are 3 to 30 of letters, digits, `_`, `.`; passwords at least 10 characters. The panel warns there is no password reset. Errors are shown in words ("Wrong email or password.", "That username is already taken.").
 
 **Signed in:** the name, `@username` and email, then:
 
-1. **Your shelf for friends.** "Not shared" until the reader taps **Share my shelf**, which asks "Share N books with your friends?" and says exactly what they will see, that a year stays a year, and that notes, pins, sessions, and covers are never shared. After that it shows the count and last published time, **Update shared shelf** (a manual re-publish), and **Stop sharing**. Friends see the shelf as of the last publish.
+1. **Your shelf for friends.** "Not shared" until the reader taps **Share my shelf**, which asks "Share N books with your friends?" and says exactly what they will see, that a year stays a year, and that notes, pins, sessions, and covers are never shared with friends. After that it shows the count and last published time, **Update shared shelf** (a manual re-publish), and **Stop sharing**. Friends see the shelf as of the last publish.
 2. **Friend requests:** incoming (**Accept**, **Decline**) and outgoing (**Cancel request**). Nobody becomes a friend without accepting.
 3. **Friends:** tap one to open their shelf.
 4. **Add a friend:** an exact username and **Find** ("No one has that username." when none; there is no partial search), then **Send friend request**; or **Find friends from contacts**, which first explains that only phone numbers are sent and not kept, then asks for the system permission. A refusal is explained and nothing is sent. Matches already friends or requested are not offered.
 5. **Be found by phone:** optional. Add a number, then switch on "Let people find me by phone" (off until switched on). The text says the server stores only a scrambled code of the number and does not verify that it is the reader's.
 6. **Blocked** (only when someone is blocked): **Unblock**.
-7. **Your account:** **Sign out**, and **Delete my account** (asks for the password, says it erases the account, friends, and shared shelf from the server and does not affect the library on the device).
+7. **Your account:** **Sign out**, and **Delete my account** (asks for the password, says it erases the account, friends, and shared shelf from the server and does not affect the library on the phone, which is saved again if the reader makes a new account).
 
 **A friend's shelf** (`/friends/:id`): read-only, grouped Reading now, Finished (most recent finish first, unknown last), Wishlist; each book shows its title, author, and finish dates exactly as shared ("Finished: March 2024", "Finished: 2019", "Finished: Date unknown"). A note says it is a snapshot and not part of the reader's own journal or keepsakes: it never adds books, dates, or activity to the reader's library. The menu has **Remove friend** and **Block**, each confirmed. A friend who has not shared shows "Nothing shared yet".
 
 ## Settings ("Your reading room")
 
-- States the privacy position: stored on the device, no account needed, no tracking.
+- States the privacy position: kept on the phone and saved to the account, no tracking, with the saving status and **Save now** (hidden in the demo, which says nothing is saved or sent).
 - **Export library:** saves a JSON backup including cover bytes and private pins to a location the reader picks.
 - **Restore a backup:** validates the file, asks "Replace this library?" showing the book count, then replaces the library atomically. A failed restore leaves the existing library unchanged. It replaces; it does not merge.
 - **Friends and sharing** (hidden in the demo): opens Friends, described below.

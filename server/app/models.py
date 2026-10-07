@@ -110,6 +110,24 @@ class Shelf(Base):
     )
 
 
+class Library(Base):
+    """The reader's whole library, as the app's backup data without cover
+    images. The phone is the source: the app replaces this row whole, and
+    `revision` lets a second phone notice that it is behind instead of
+    overwriting newer data."""
+
+    __tablename__ = "libraries"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    payload: Mapped[dict] = mapped_column(JSONB)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class RateEvent(Base):
     __tablename__ = "rate_events"
     __table_args__ = (Index("ix_rate_events_key_created", "key", "created_at"),)

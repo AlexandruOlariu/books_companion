@@ -97,4 +97,8 @@ class ServerBookLookup implements BookLookup {
   @override
   Future<String?> fetchCover(BookSuggestion suggestion) =>
       _direct.fetchCover(suggestion);
+
+  @override
+  Future<String?> fetchCoverFromUrl(String url) =>
+      _direct.fetchCoverFromUrl(url);
 }

@@ -29,7 +29,8 @@ See the final verification notes below for execution results. Tests cover partia
 - Final icon review and store-size screenshots from a seeded build.
 - Cover paths are stored as absolute paths. If iOS relocates the app container (for example restoring a device backup to a new device), covers would need re-resolving against the current documents directory; this has not been observed here and needs checking on iOS.
 - Open product question: Google Books as a cover fallback (`decisions.md` D19), and whether keepsakes count only in-app finishes (D23).
-- Custom shelves, ratings, editable history, and more advanced statistics are follow-ups. No cloud service or sync queue is present.
+- Custom shelves, ratings, editable history, and more advanced statistics are follow-ups.
+- Account sync (D38): try it on two real phones and on a real device offline; decide on end-to-end encryption of notes; add a password reset (a lost password now means a lost saved copy); fill in the server location and backup period in `privacy-policy.md` and add the Play web deletion page. A first install without a connection cannot get past the account page.
 
 ## Executed checks — 6 October 2026
 
@@ -90,3 +91,8 @@ See the final verification notes below for execution results. Tests cover partia
 - 85 unit and widget tests pass. The v1 to v2 migration ran on an emulator database that was still at version 1 (the app opened, kept all books, and the seed added more), in addition to the migration tests.
 - Reviewed on the emulator: the alphabetical shelf (articles ignored), the Dune series together in order, the Sort sheet, and the add form with series quick picks. Not yet checked on a real phone, at maximum text size, or with an iOS device. The Android integration test was updated for the single Finished choice and passes on the emulator.
 
+## Executed checks — account and library sync pass (7 October 2026)
+
+- 186 Flutter tests and 72 server tests pass; analyzer and format clean. The server migration `0002` ran in the deployed container (`libraries` exists with a cascade to `users`); `https://ai.duk-tech.com/books-api/me/library` answers 401 without a token.
+- On the emulator, against the deployed server: the v2 to v3 database upgrade kept 51 books; the account page came first; creating an account saved the library (revision 1, 51 books); after clearing app data and signing in, the conflict dialog showed 51 and 51, "Use my account" downloaded the library and fetched the one cover that had a source; adding a book reached the server within seconds (revision 2). The throwaway account was deleted from the database afterwards.
+- Data integrity added: a download is validated like a backup and applied in one transaction; a malformed account copy leaves the phone untouched; a cover address outside Open Library's cover host is rejected on save and restore; device cover paths are never sent.

@@ -13,7 +13,7 @@ class LocalLibraryRepository implements LibraryRepository {
     final rows = await db.customSelect('''
       SELECT u.id, u.book_id, u.edition_id, u.status, u.current_page, b.title,
         b.series_name, b.series_number,
-        e.page_count, e.language, e.cover_local_path,
+        e.page_count, e.language, e.cover_local_path, e.cover_source,
         (SELECT group_concat(name, ', ') FROM
           (SELECT a.name FROM authors a JOIN book_authors ba ON ba.author_id=a.id
            WHERE ba.book_id=b.id ORDER BY ba.position)) AS author
@@ -36,6 +36,7 @@ class LocalLibraryRepository implements LibraryRepository {
               seriesNumber: r.readNullable('series_number'),
               language: r.readNullable('language'),
               coverPath: r.readNullable('cover_local_path'),
+              coverSource: r.readNullable('cover_source'),
             ),
           )
           .toList(),
@@ -84,6 +85,27 @@ class LocalLibraryRepository implements LibraryRepository {
       .map((e) => e.coverLocalPath)
       .whereType<String>()
       .toSet();
+  @override
+  Future<List<({String editionId, String source})>> coversToFetch() async {
+    final rows =
+        await (db.select(db.editions)..where(
+              (e) => e.coverSource.isNotNull() & e.coverLocalPath.isNull(),
+            ))
+            .get();
+    return [
+      for (final e in rows)
+        if (isOpenLibraryCoverUrl(e.coverSource!))
+          (editionId: e.id, source: e.coverSource!),
+    ];
+  }
+
+  @override
+  Future<void> attachCover(String editionId, String path) async {
+    await (db.update(db.editions)..where((e) => e.id.equals(editionId))).write(
+      EditionsCompanion(coverLocalPath: Value(path)),
+    );
+  }
+
   Future<UserBook> _owned(String id) =>
       (db.select(db.userBooks)..where((u) => u.id.equals(id))).getSingle();
   Future<int?> _total(UserBook u) async => (await (db.select(
@@ -97,6 +119,7 @@ class LocalLibraryRepository implements LibraryRepository {
     int? pageCount,
     String? language,
     String? coverPath,
+    String? coverSource,
     required BookStatus status,
     PartialDate? finish,
     bool historical = false,
@@ -118,6 +141,9 @@ class LocalLibraryRepository implements LibraryRepository {
     }
     if (pageCount != null && pageCount <= 0) {
       throw const FormatException('Page count must be greater than zero.');
+    }
+    if (coverSource != null && !isOpenLibraryCoverUrl(coverSource)) {
+      throw const FormatException('Unknown cover source.');
     }
     if (status == BookStatus.finished && id == null && finish == null) {
       throw const FormatException('Confirm when you finished this book.');
@@ -190,6 +216,7 @@ class LocalLibraryRepository implements LibraryRepository {
               pageCount: Value(pageCount),
               language: Value(language),
               coverLocalPath: Value(coverPath),
+              coverSource: Value(coverSource),
               // Editing keeps the original provenance.
               metadataSource: old == null
                   ? Value(metadataSource)
@@ -411,6 +438,9 @@ class LocalLibraryRepository implements LibraryRepository {
     for (final e in editions) {
       if (e.pageCount != null && e.pageCount! <= 0) {
         throw const FormatException('Invalid page count.');
+      }
+      if (e.coverSource != null && !isOpenLibraryCoverUrl(e.coverSource!)) {
+        throw const FormatException('Unknown cover source.');
       }
     }
     final totals = <String, int?>{};

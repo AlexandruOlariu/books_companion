@@ -46,6 +46,11 @@ abstract class BookLookup {
   /// no usable cover; the caller keeps the book and falls back to a generated
   /// cover.
   Future<String?> fetchCover(BookSuggestion suggestion);
+
+  /// Fetches a cover again from a saved source address (see
+  /// `isOpenLibraryCoverUrl`; anything else returns null). Used for a library
+  /// restored on another phone.
+  Future<String?> fetchCoverFromUrl(String url);
 }
 
 /// An ISBN-10 or ISBN-13, ignoring hyphens and spaces; null for other input.

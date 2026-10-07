@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import '../../../core/storage/cover_store.dart';
+import '../../library/domain/models.dart';
 import '../domain/book_lookup.dart';
 
 /// Optional metadata from https://openlibrary.org. Requests are made only when
@@ -195,7 +196,16 @@ class OpenLibraryLookup implements BookLookup {
   @override
   Future<String?> fetchCover(BookSuggestion suggestion) async {
     final url = suggestion.coverUrl;
-    if (url == null) return null;
+    return url == null ? null : _download(url);
+  }
+
+  /// For an address that came from saved data rather than from a search, so
+  /// only Open Library's cover host is ever contacted.
+  @override
+  Future<String?> fetchCoverFromUrl(String url) async =>
+      isOpenLibraryCoverUrl(url) ? _download(url) : null;
+
+  Future<String?> _download(String url) async {
     try {
       final bytes = await _get(Uri.parse(url), limit: 5 * 1024 * 1024);
       final extension = imageExtension(bytes);

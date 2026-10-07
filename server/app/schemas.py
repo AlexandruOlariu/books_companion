@@ -238,3 +238,51 @@ class BookSearchOut(BaseModel):
     # True when nothing matched every word, so these are only close matches.
     approximate: bool
     books: list[BookOut]
+
+
+# --- library sync -----------------------------------------------------------
+
+# The tables of the app's backup data. Anything else is refused, so a client bug
+# cannot park unrelated data here. The contents are validated by the app when
+# it restores them; the server only keeps the shape and the size in check.
+LIBRARY_TABLES = (
+    "books",
+    "authors",
+    "bookAuthors",
+    "editions",
+    "userBooks",
+    "records",
+    "sessions",
+    "pins",
+)
+MAX_LIBRARY_ROWS = 100_000
+
+
+class LibraryIn(Strict):
+    base_revision: int = Field(ge=0)
+    data: dict
+
+    @field_validator("data")
+    @classmethod
+    def _shape(cls, data: dict) -> dict:
+        if data.get("version") != 1:
+            raise ValueError("unsupported library version")
+        extra = set(data) - set(LIBRARY_TABLES) - {"version"}
+        if extra:
+            raise ValueError(f"unknown tables: {', '.join(sorted(extra))}")
+        for table in LIBRARY_TABLES:
+            rows = data.get(table)
+            if not isinstance(rows, list) or len(rows) > MAX_LIBRARY_ROWS:
+                raise ValueError(f"{table} must be a list of at most {MAX_LIBRARY_ROWS} rows")
+            if not all(isinstance(row, dict) for row in rows):
+                raise ValueError(f"{table} must contain objects")
+        return data
+
+
+class LibraryMeta(BaseModel):
+    revision: int
+    updated_at: datetime
+
+
+class LibraryOut(LibraryMeta):
+    data: dict

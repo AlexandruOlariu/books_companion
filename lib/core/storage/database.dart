@@ -39,6 +39,10 @@ class Editions extends Table {
   IntColumn get pageCount => integer().nullable()();
   TextColumn get language => text().nullable()();
   TextColumn get coverLocalPath => text().nullable()();
+  // Added in schema version 3: where a cover found online came from (a URL on
+  // Open Library's cover host), so a library restored on another phone can
+  // fetch it again. Null for a cover chosen from the gallery.
+  TextColumn get coverSource => text().nullable()();
   TextColumn get metadataSource =>
       text().withDefault(const Constant('manual'))();
   @override
@@ -112,7 +116,7 @@ class Pins extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
@@ -125,6 +129,10 @@ class AppDatabase extends _$AppDatabase {
       from1To2: (m, schema) async {
         await m.addColumn(schema.books, schema.books.seriesName);
         await m.addColumn(schema.books, schema.books.seriesNumber);
+      },
+      // 2 -> 3: where an online cover came from. Existing rows have none.
+      from2To3: (m, schema) async {
+        await m.addColumn(schema.editions, schema.editions.coverSource);
       },
     ),
     beforeOpen: (_) async {

@@ -113,7 +113,7 @@ void main() {
   });
 
   group('signed out', () {
-    testWidgets('Settings offers friends as optional, and the demo does not', (
+    testWidgets('Settings offers friends, and the demo does not', (
       tester,
     ) async {
       Future<void> settings({required bool demo}) async {
@@ -135,7 +135,7 @@ void main() {
       addTearDown(tester.view.reset);
       await settings(demo: false);
       expect(find.text('Friends and sharing'), findsOneWidget);
-      expect(find.textContaining('Optional.'), findsOneWidget);
+      expect(find.textContaining('Find friends and share'), findsOneWidget);
       await settings(demo: true);
       expect(find.text('Friends and sharing'), findsNothing);
     });
@@ -145,9 +145,10 @@ void main() {
     ) async {
       await pump(tester);
       await openFriends(tester);
-      expect(find.text('Read alongside friends.'), findsOneWidget);
-      expect(find.textContaining('What is sent:'), findsOneWidget);
-      expect(find.textContaining('never leave this device'), findsOneWidget);
+      expect(find.text('Your reading room, kept safe.'), findsOneWidget);
+      expect(find.textContaining('What is saved:'), findsOneWidget);
+      expect(find.textContaining('private notes and pins'), findsOneWidget);
+      expect(find.textContaining('not end-to-end encrypted'), findsOneWidget);
       expect(api.registered, isEmpty);
     });
 
@@ -370,7 +371,7 @@ void main() {
       await pump(tester);
       await openFriends(tester);
       await tapText(tester, 'Sign out');
-      expect(find.text('Read alongside friends.'), findsOneWidget);
+      expect(find.text('Your reading room, kept safe.'), findsOneWidget);
     });
 
     testWidgets('deleting the account needs the password', (tester) async {
@@ -379,7 +380,7 @@ void main() {
       await tapText(tester, 'Delete my account');
       expect(find.text('Delete your account?'), findsOneWidget);
       expect(
-        find.textContaining('library on this device is not affected'),
+        find.textContaining('library on this phone is not affected'),
         findsOneWidget,
       );
       await tester.enterText(
@@ -399,7 +400,7 @@ void main() {
       await tester.tap(find.text('Delete account'));
       await tester.pumpAndSettle();
       expect(api.deletedWith, 'a long password');
-      expect(find.text('Read alongside friends.'), findsOneWidget);
+      expect(find.text('Your reading room, kept safe.'), findsOneWidget);
       // The reader's own library is untouched.
       expect((await repo.load()).books, hasLength(2));
     });

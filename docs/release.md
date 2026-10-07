@@ -41,7 +41,7 @@ test only, `READING_LIBRARY_DEBUG_SIGNING=1 flutter build apk --release` signs
 with the debug key; Google Play rejects those builds.
 
 Verified here: a release APK built with a throwaway key is signed by that key
-and requested only the `INTERNET` permission (used for optional Open Library
+and requested only the `INTERNET` permission (used for Open Library
 search). That check predates the friends feature: the debug build now also
 requests `READ_CONTACTS` (checked in its merged manifest); a release build has
 not been re-inspected since.
@@ -59,7 +59,7 @@ Capabilities, then `flutter build ipa --release`. Signing style is Automatic and
 no team is committed.
 
 Not yet done (needs Xcode): an app-level `PrivacyInfo.xcprivacy` added to the
-Runner target. The app code itself uses no tracking; it sends only the optional account data
+Runner target. The app code itself uses no tracking; it sends only the account data and the saved library
 and the online search text (not stored, see `store-privacy.md`), but
 confirm the archive's generated privacy report in Xcode before submitting.
 

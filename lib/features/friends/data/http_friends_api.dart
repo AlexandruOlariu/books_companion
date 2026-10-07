@@ -5,13 +5,14 @@ import 'dart:typed_data';
 
 import '../../../core/storage/session_store.dart';
 import '../../library/domain/models.dart';
+import '../../sync/domain/sync_models.dart';
 import '../domain/friends_models.dart';
 
 /// Talks to the optional friends server (see docs/backend.md) with `dart:io`,
 /// like the Open Library lookup. Nothing here runs unless the reader opens
 /// Friends and acts; the library itself is never sent, only what the reader
 /// publishes.
-class HttpFriendsApi implements FriendsApi {
+class HttpFriendsApi implements FriendsApi, LibrarySyncApi {
   final SessionStore _session;
   final Uri _origin;
   final HttpClient Function() _client;
@@ -28,6 +29,8 @@ class HttpFriendsApi implements FriendsApi {
       'Could not reach the Reading Library server. Check your connection and try again.';
   static const _signedOut = 'Please sign in again.';
   static const _responseLimit = 8 * 1024 * 1024;
+  // A saved library (notes and sessions, no covers) may be larger than that.
+  static const _libraryLimit = 24 * 1024 * 1024;
 
   // --- transport -----------------------------------------------------------
 
@@ -37,6 +40,7 @@ class HttpFriendsApi implements FriendsApi {
     Object? body,
     Map<String, String>? query,
     String? token,
+    int limit = _responseLimit,
   }) async {
     final uri = _origin.replace(
       path: '${_origin.path}$path',
@@ -61,7 +65,7 @@ class HttpFriendsApi implements FriendsApi {
       final bytes = BytesBuilder(copy: false);
       await for (final chunk in response.timeout(const Duration(seconds: 20))) {
         bytes.add(chunk);
-        if (bytes.length > _responseLimit) throw const HttpException('Too big');
+        if (bytes.length > limit) throw const HttpException('Too big');
       }
       final text = utf8.decode(bytes.takeBytes());
       return (response.statusCode, text.isEmpty ? null : jsonDecode(text));
@@ -106,6 +110,7 @@ class HttpFriendsApi implements FriendsApi {
     Object? body,
     Map<String, String>? query,
     Set<int> allow = const {},
+    int limit = _responseLimit,
   }) async {
     final session = await _session.read();
     if (session == null) {
@@ -117,6 +122,7 @@ class HttpFriendsApi implements FriendsApi {
       body: body,
       query: query,
       token: session.accessToken,
+      limit: limit,
     );
     if (status == 401) {
       if (!await _refresh()) {
@@ -130,6 +136,7 @@ class HttpFriendsApi implements FriendsApi {
         body: body,
         query: query,
         token: fresh?.accessToken,
+        limit: limit,
       );
       if (status == 401) {
         await _session.clear();
@@ -239,6 +246,9 @@ class HttpFriendsApi implements FriendsApi {
   );
 
   // --- account -------------------------------------------------------------
+
+  @override
+  Future<bool> signedIn() async => await _session.read() != null;
 
   @override
   Future<Account?> me() async {
@@ -443,5 +453,61 @@ class HttpFriendsApi implements FriendsApi {
   Future<SharedShelf?> friendShelf(String userId) async {
     final json = await _call('GET', '/friends/$userId/shelf', allow: {404});
     return json == null ? null : _shelf(json);
+  }
+
+  // --- library -------------------------------------------------------------
+
+  @override
+  Future<String?> accountId() async {
+    try {
+      final json = await _call('GET', '/me');
+      return (json as Map)['id'] as String;
+    } on FriendsException catch (e) {
+      if (e.signedOut) return null;
+      rethrow;
+    }
+  }
+
+  LibraryRevision _revision(dynamic j) => LibraryRevision(
+    j['revision'] as int,
+    DateTime.parse(j['updated_at'] as String),
+  );
+
+  @override
+  Future<LibraryRevision?> libraryRevision() async {
+    final json = await _call('GET', '/me/library/meta', allow: {404});
+    return json == null ? null : _revision(json);
+  }
+
+  @override
+  Future<RemoteLibrary?> fetchLibrary() async {
+    final json = await _call(
+      'GET',
+      '/me/library',
+      allow: {404},
+      limit: _libraryLimit,
+    );
+    if (json == null) return null;
+    final revision = _revision(json);
+    return RemoteLibrary(
+      revision.revision,
+      revision.updatedAt,
+      Map<String, dynamic>.from(json['data'] as Map),
+    );
+  }
+
+  @override
+  Future<LibraryRevision> saveLibrary(
+    Map<String, dynamic> data, {
+    required int baseRevision,
+  }) async {
+    final json = await _call(
+      'PUT',
+      '/me/library',
+      body: {'base_revision': baseRevision, 'data': data},
+      allow: {409},
+    );
+    if (json == null) throw const LibraryConflictException();
+    return _revision(json);
   }
 }

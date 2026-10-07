@@ -32,6 +32,8 @@ class _FakeLookup implements BookLookup {
 
   @override
   Future<String?> fetchCover(BookSuggestion suggestion) async => cover;
+  @override
+  Future<String?> fetchCoverFromUrl(String url) async => cover;
 }
 
 void main() {

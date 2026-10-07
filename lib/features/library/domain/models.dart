@@ -57,9 +57,16 @@ class PartialDate {
   };
 }
 
+/// A cover address the app may fetch again: Open Library's cover host only, so
+/// a restored library or a synced one can never make the app download from
+/// anywhere else.
+bool isOpenLibraryCoverUrl(String url) => RegExp(
+  r'^https://covers\.openlibrary\.org/b/id/\d{1,12}-L\.jpg(\?default=false)?$',
+).hasMatch(url);
+
 class BookEntry {
   final String id, bookId, editionId, title, author;
-  final String? language, coverPath, seriesName;
+  final String? language, coverPath, coverSource, seriesName;
   final int? pageCount, seriesNumber;
   final int currentPage;
   final BookStatus status;
@@ -72,6 +79,7 @@ class BookEntry {
     required this.status,
     this.language,
     this.coverPath,
+    this.coverSource,
     this.pageCount,
     this.seriesName,
     this.seriesNumber,
@@ -197,6 +205,7 @@ abstract class LibraryRepository {
     int? pageCount,
     String? language,
     String? coverPath,
+    String? coverSource,
     required BookStatus status,
     PartialDate? finish,
     bool historical = false,
@@ -205,6 +214,14 @@ abstract class LibraryRepository {
     int? seriesNumber,
   });
   Future<Set<String>> coverPaths();
+
+  /// Editions whose cover came from Open Library but is not on this device
+  /// (a library restored or synced from another phone).
+  Future<List<({String editionId, String source})>> coversToFetch();
+
+  /// Stores a cover file fetched later for [editionId]. Not a change to the
+  /// library itself, so it is never synced.
+  Future<void> attachCover(String editionId, String path);
   Future<void> updatePage(String id, int page);
   Future<void> setStatus(String id, BookStatus status, {PartialDate? finish});
   Future<void> logSession(

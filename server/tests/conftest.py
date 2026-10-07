@@ -41,7 +41,7 @@ def clean(schema):
     with get_engine().begin() as conn:
         conn.execute(
             text(
-                "truncate users, refresh_tokens, friendships, blocks, shelves, "
+                "truncate users, refresh_tokens, friendships, blocks, shelves, libraries, "
                 "rate_events cascade"
             )
         )

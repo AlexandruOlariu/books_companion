@@ -21,14 +21,49 @@ void main() {
     },
   );
 
-  test('the current schema matches the frozen version-2 dump', () async {
+  test('the current schema matches the frozen version-3 dump', () async {
     // Fails if a table or column changes without a new schema version and a
     // dump in drift_schemas/.
-    final connection = await verifier.startAt(2);
+    final connection = await verifier.startAt(3);
     final db = AppDatabase(connection);
     addTearDown(db.close);
     await verifier.migrateAndValidate(db, db.schemaVersion);
-    expect(db.schemaVersion, 2);
+    expect(db.schemaVersion, 3);
+  });
+
+  test(
+    'upgrading the frozen version-2 schema reaches the current schema',
+    () async {
+      final connection = await verifier.startAt(2);
+      final db = AppDatabase(connection);
+      addTearDown(db.close);
+      await verifier.migrateAndValidate(db, db.schemaVersion);
+    },
+  );
+
+  test('a version-2 library keeps its series and covers, with no cover source', () async {
+    final schema = await verifier.schemaAt(2);
+    final seeded = AppDatabase(schema.newConnection());
+    await seeded.customStatement('PRAGMA foreign_keys = OFF');
+    final stamp = DateTime(2024, 5, 1).millisecondsSinceEpoch ~/ 1000;
+    await seeded.customStatement(
+      "INSERT INTO books (id, title, series_name, series_number, created_at, updated_at) VALUES ('b1', 'Dune', 'Dune', 1, $stamp, $stamp)",
+    );
+    await seeded.customStatement(
+      "INSERT INTO editions (id, book_id, page_count, cover_local_path, metadata_source) VALUES ('e1', 'b1', 412, '/covers/dune.cover', 'open_library')",
+    );
+    await seeded.close();
+
+    final upgraded = AppDatabase(schema.newConnection());
+    addTearDown(upgraded.close);
+    await verifier.migrateAndValidate(upgraded, upgraded.schemaVersion);
+    final book = await upgraded.select(upgraded.books).getSingle();
+    expect((book.seriesName, book.seriesNumber), ('Dune', 1));
+    final edition = await upgraded.select(upgraded.editions).getSingle();
+    expect(edition.coverLocalPath, '/covers/dune.cover');
+    expect(edition.pageCount, 412);
+    // Nothing is invented: an old cover has no known source.
+    expect(edition.coverSource, isNull);
   });
 
   test('a version-1 library survives upgrade to the current schema', () async {

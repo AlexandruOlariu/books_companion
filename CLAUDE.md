@@ -11,7 +11,7 @@ A private, local-first reading journal for Android and iOS (Flutter). The owner 
 ## Rules the product depends on
 
 - Never invent dates or activity. A finish date keeps its precision (`day`, `month`, `year`, `unknown`). Only logged sessions create reading activity. Keepsakes are earned only by finished-book count. See `docs/features.md`.
-- Personal notes stay on the device. A new network call, permission, or place data is sent is a privacy change: tell the user and update `docs/privacy-policy.md` and `docs/store-privacy.md`.
+- Personal notes are written to the device first and saved to the reader's own account on the server (D38); friends never see them. A new network call, permission, or place data is sent is a privacy change: tell the user and update `docs/privacy-policy.md` and `docs/store-privacy.md`.
 - Never put secrets in the repo. `android/key.properties` and keystores are git-ignored; do not read them or print passwords. If a user pastes a password in chat, do not use it unless the task truly needs it, and suggest changing it.
 
 ## Working conventions

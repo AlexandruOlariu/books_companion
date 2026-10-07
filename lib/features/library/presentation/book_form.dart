@@ -36,6 +36,9 @@ class _BookFormState extends ConsumerState<BookForm> {
       widget.book?.status ??
       (widget.historical ? BookStatus.finished : BookStatus.wantToRead);
   late String? cover = widget.book?.coverPath;
+  // Where an online cover came from, so another phone can fetch it again. A
+  // cover from the gallery has none.
+  late String? coverSource = widget.book?.coverSource;
   PartialDate? finish;
   bool busy = false, dirty = false, allowPop = false, another = false;
   int dateKey = 0;
@@ -105,6 +108,9 @@ class _BookFormState extends ConsumerState<BookForm> {
       pages.text = s.pageCount?.toString() ?? '';
       language.text = s.language ?? '';
       cover = choice.coverPath;
+      coverSource = s.coverUrl != null && isOpenLibraryCoverUrl(s.coverUrl!)
+          ? s.coverUrl
+          : null;
       metadataSource = 'open_library';
       savedMessage = switch ((choice.coverPath, s.coverUrl)) {
         (String _, _) =>
@@ -162,6 +168,7 @@ class _BookFormState extends ConsumerState<BookForm> {
                 ? null
                 : language.text.trim(),
             coverPath: cover,
+            coverSource: coverSource,
             status: status,
             finish: finish,
             // A book added straight as Finished is a remembered finish; books
@@ -189,6 +196,7 @@ class _BookFormState extends ConsumerState<BookForm> {
               : '${number + 1}';
           if (series.text.trim().isEmpty) series.clear();
           cover = null;
+          coverSource = null;
           metadataSource = 'manual';
           restored = false;
           finish = null;
@@ -290,7 +298,7 @@ class _BookFormState extends ConsumerState<BookForm> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Enter your edition’s details. Everything stays on this device.',
+              'Enter your edition’s details. It is saved to your account.',
             ),
             const SizedBox(height: 24),
             if (widget.book == null) ...[
@@ -427,6 +435,7 @@ class _BookFormState extends ConsumerState<BookForm> {
                     if (mounted) {
                       setState(() {
                         cover = path;
+                        coverSource = null;
                         dirty = true;
                       });
                     }
@@ -445,6 +454,7 @@ class _BookFormState extends ConsumerState<BookForm> {
               TextButton(
                 onPressed: () => setState(() {
                   cover = null;
+                  coverSource = null;
                   dirty = true;
                 }),
                 child: const Text('Use a generated cover'),

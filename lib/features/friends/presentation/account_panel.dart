@@ -1,14 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../sync/presentation/sync_controller.dart';
 import '../domain/friends_models.dart';
 import 'friends_providers.dart';
 
-/// Sign in or create an account. Shown instead of the friends list while
-/// nobody is signed in. Nothing is sent until the reader presses the button.
+/// Sign in or create an account. The app shows it before anything else while
+/// nobody is signed in, because the library is saved to the account. Nothing
+/// is sent until the reader presses the button.
 class AccountPanel extends ConsumerStatefulWidget {
   const AccountPanel({super.key});
   @override
@@ -48,8 +52,9 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
     });
     final api = ref.read(friendsApiProvider);
     try {
+      final Account account;
       if (creating) {
-        await api.register(
+        account = await api.register(
           email: email.text,
           password: password.text,
           username: username.text,
@@ -57,9 +62,12 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
           lastName: last.text,
         );
       } else {
-        await api.signIn(email: email.text, password: password.text);
+        account = await api.signIn(email: email.text, password: password.text);
       }
-      if (mounted) resetFriendsData(ref);
+      if (!mounted) return;
+      resetFriendsData(ref);
+      // Remember whose library this is and save it; the phone never waits.
+      unawaited(ref.read(syncControllerProvider.notifier).signedIn(account.id));
     } on FriendsException catch (e) {
       if (mounted) setState(() => error = e.message);
     } on Object {
@@ -92,15 +100,15 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(24),
     children: [
-      const Eyebrow('Optional'),
+      const Eyebrow('Your account'),
       const SizedBox(height: 16),
       Text(
-        'Read alongside friends.',
+        'Your reading room, kept safe.',
         style: Theme.of(context).textTheme.headlineLarge,
       ),
       const SizedBox(height: 16),
       const Text(
-        'An account lets you find friends and share a list of the books you have read. You can use the whole app without one.',
+        'Your library is saved to your account, so a lost or new phone never loses it. The app works without a connection and saves when it can. An account also lets you find friends.',
         style: TextStyle(height: 1.5),
       ),
       const SizedBox(height: 20),
@@ -169,7 +177,7 @@ class _PrivacyNote extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
     ),
     child: const Text(
-      'What is sent: your name, username, and email when you create an account, and only if you choose to publish it, the titles, authors, status, and finish dates of your books. Your notes, pins, reading sessions, and covers never leave this device.',
+      'What is saved: your name, username, and email, and your whole library: books, finish dates, reading sessions, and your private notes and pins. It is kept on the developer\'s server and is not end-to-end encrypted. Covers found online are fetched again from Open Library; photos you chose yourself stay on this phone. Friends only ever see what you choose to publish: titles, authors, status, and finish dates.',
       style: TextStyle(height: 1.5),
     ),
   );

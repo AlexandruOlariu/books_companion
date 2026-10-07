@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
 
 import '../../../app/providers.dart';
 import '../../../core/widgets/common.dart';
@@ -27,15 +28,22 @@ final friendShelfProvider = FutureProvider.family<SharedShelf?, String>(
   (ref, userId) => ref.watch(friendsApiProvider).friendShelf(userId),
 );
 
-/// Forget everything loaded for the previous account.
-void resetFriendsData(WidgetRef ref) {
-  ref
-    ..invalidate(accountProvider)
-    ..invalidate(friendsProvider)
-    ..invalidate(friendRequestsProvider)
-    ..invalidate(blockedProvider)
-    ..invalidate(mySharedShelfProvider)
-    ..invalidate(friendShelfProvider);
+/// Forget everything loaded for the previous account, and look again at
+/// whether anyone is signed in (the app asks for an account when no one is).
+void resetFriendsData(WidgetRef ref) => resetAccountData(ref.invalidate);
+
+void resetAccountData(void Function(ProviderOrFamily) invalidate) {
+  for (final provider in <ProviderOrFamily>[
+    accountProvider,
+    friendsProvider,
+    friendRequestsProvider,
+    blockedProvider,
+    mySharedShelfProvider,
+    friendShelfProvider,
+    signedInProvider,
+  ]) {
+    invalidate(provider);
+  }
 }
 
 /// Runs a friends action and shows the problem, if any, instead of throwing.

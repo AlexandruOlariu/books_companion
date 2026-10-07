@@ -106,7 +106,7 @@ Future<void> main() async {
   var added = 0, covers = 0;
   for (final (title, author, pages, state) in _books) {
     if (have.contains(foldForSearch(title))) continue;
-    String? cover;
+    String? cover, coverSource;
     try {
       final found = await lookup.search('$title $author');
       final match = found
@@ -116,7 +116,10 @@ Future<void> main() async {
                 foldForSearch(s.title).contains(foldForSearch(title)),
           )
           .firstOrNull;
-      if (match != null) cover = await lookup.fetchCover(match);
+      if (match != null) {
+        cover = await lookup.fetchCover(match);
+        coverSource = match.coverUrl;
+      }
     } on Object {
       /* Offline: a generated cover is used. */
     }
@@ -136,6 +139,7 @@ Future<void> main() async {
       author: author,
       pageCount: pages,
       coverPath: cover,
+      coverSource: coverSource,
       status: reading
           ? BookStatus.reading
           : want
@@ -159,6 +163,7 @@ Future<void> main() async {
       pageCount: book.pageCount,
       language: book.language,
       coverPath: book.coverPath,
+      coverSource: book.coverSource,
       status: book.status,
       seriesName: series.$1,
       seriesNumber: series.$2,

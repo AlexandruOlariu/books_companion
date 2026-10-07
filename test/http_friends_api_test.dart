@@ -6,6 +6,7 @@ import 'package:reading_library/core/storage/session_store.dart';
 import 'package:reading_library/features/friends/data/http_friends_api.dart';
 import 'package:reading_library/features/friends/domain/friends_models.dart';
 import 'package:reading_library/features/library/domain/models.dart';
+import 'package:reading_library/features/sync/domain/sync_models.dart';
 
 class Seen {
   final String method, path;
@@ -424,5 +425,148 @@ void main() {
         expect(h.seen, isEmpty);
       },
     );
+  });
+
+  group('library', () {
+    const library = {
+      'version': 1,
+      'books': [],
+      'authors': [],
+      'bookAuthors': [],
+      'editions': [],
+      'userBooks': [],
+      'records': [],
+      'sessions': [],
+      'pins': [
+        {'id': 'p1', 'textContent': 'private'},
+      ],
+    };
+
+    test(
+      'being signed in is known on the device, without the server',
+      () async {
+        expect(await h.api.signedIn(), isFalse);
+        await signedIn();
+        expect(await h.api.signedIn(), isTrue);
+        expect(h.seen, isEmpty);
+      },
+    );
+
+    test(
+      'the account id comes from the server, or null when signed out',
+      () async {
+        expect(await h.api.accountId(), isNull);
+        await signedIn();
+        h.handler = (_) => (200, meJson);
+        expect(await h.api.accountId(), 'u1');
+      },
+    );
+
+    test('nothing saved yet is null, not an error', () async {
+      await signedIn();
+      h.handler = (_) => (404, {'detail': 'No library saved yet.'});
+      expect(await h.api.libraryRevision(), isNull);
+      expect(await h.api.fetchLibrary(), isNull);
+    });
+
+    test('the revision and the library are read back', () async {
+      await signedIn();
+      h.handler = (r) => switch (r.path) {
+        '/me/library/meta' => (
+          200,
+          {'revision': 3, 'updated_at': '2026-10-07T10:00:00Z'},
+        ),
+        '/me/library' => (
+          200,
+          {
+            'revision': 3,
+            'updated_at': '2026-10-07T10:00:00Z',
+            'data': library,
+          },
+        ),
+        _ => (404, null),
+      };
+      expect((await h.api.libraryRevision())!.revision, 3);
+      final fetched = (await h.api.fetchLibrary())!;
+      expect(fetched.revision, 3);
+      expect((fetched.data['pins'] as List).single['textContent'], 'private');
+      expect(h.seen.every((r) => r.auth == 'Bearer access-1'), isTrue);
+    });
+
+    test('saving sends the base revision and the data, nothing else', () async {
+      await signedIn();
+      h.handler = (_) =>
+          (200, {'revision': 4, 'updated_at': '2026-10-07T10:00:00Z'});
+      final saved = await h.api.saveLibrary(library, baseRevision: 3);
+      expect(saved.revision, 4);
+      final sent = h.seen.single;
+      expect(sent.method, 'PUT');
+      expect(sent.path, '/me/library');
+      expect((sent.body as Map).keys.toSet(), {'base_revision', 'data'});
+      expect(sent.body['base_revision'], 3);
+      expect(sent.body['data'], library);
+    });
+
+    test(
+      'a newer library on the server is a conflict, not a failure',
+      () async {
+        await signedIn();
+        h.handler = (_) =>
+            (409, {'detail': 'Your library changed on another device.'});
+        await expectLater(
+          h.api.saveLibrary(library, baseRevision: 1),
+          throwsA(isA<LibraryConflictException>()),
+        );
+      },
+    );
+
+    test('a library that is too large is explained', () async {
+      await signedIn();
+      h.handler = (_) =>
+          (413, {'detail': 'Your library is too large to save.'});
+      await expectLater(
+        h.api.saveLibrary(library, baseRevision: 0),
+        throwsA(
+          isA<FriendsException>().having(
+            (e) => e.message,
+            'message',
+            'Your library is too large to save.',
+          ),
+        ),
+      );
+    });
+
+    test('an expired token is refreshed once and the save retried', () async {
+      await signedIn();
+      var puts = 0;
+      h.handler = (r) {
+        if (r.path == '/auth/refresh') return (200, tokens('2'));
+        puts++;
+        return puts == 1
+            ? (401, {'detail': 'Not signed in.'})
+            : (200, {'revision': 1, 'updated_at': '2026-10-07T10:00:00Z'});
+      };
+      expect((await h.api.saveLibrary(library, baseRevision: 0)).revision, 1);
+      expect(h.seen.last.auth, 'Bearer access-2');
+    });
+
+    test('losing the connection never signs the reader out', () async {
+      await signedIn();
+      await h.stop();
+      await expectLater(
+        h.api.saveLibrary(library, baseRevision: 0),
+        throwsA(
+          isA<FriendsException>().having(
+            (e) => e.signedOut,
+            'signedOut',
+            false,
+          ),
+        ),
+      );
+      expect(await h.api.signedIn(), isTrue);
+      // tearDown closes the server again.
+      h = Harness();
+      await h.start();
+    });
   });
 }

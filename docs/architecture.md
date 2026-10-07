@@ -16,7 +16,7 @@ Flutter 3.47.6 / Dart 3.13.5. Direct dependencies are pinned in `pubspec.yaml`; 
 | image_picker | 1.2.4 | choosing a cover |
 | file_picker | 13.1.0 | saving and choosing backup files |
 | share_plus (+ cross_file) | 13.3.1 / 0.3.5+5 | native share sheet |
-| flutter_secure_storage | 11.2.0 | the optional friends sign-in tokens (Keychain on iOS, an encrypted store on Android) |
+| flutter_secure_storage | 11.2.0 | the account sign-in tokens (Keychain on iOS, an encrypted store on Android) |
 | flutter_contacts | 2.6.0 | read-only phone numbers for "Find friends from contacts"; asked for only when the reader taps it |
 | intl | 0.20.3 | date formatting |
 | dev: drift_dev, build_runner, flutter_lints | 2.35.1, 2.16.1, 6.0.0 | codegen, migration tooling, lints |
@@ -32,7 +32,7 @@ presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepos
                                   ^ domain rules live in plain Dart (models.dart, search.dart, sorting.dart)
 ```
 
-- Screens call `LibraryRepository`, never Drift. A remote implementation could be added later behind the same interface; no sync code exists. The optional friends feature (accounts, friends, a published shelf) talks to a separate server (`server/`, see `backend.md`) through `FriendsApi`; it is independent of the library layer and never reads Drift. See "Friends client" below.
+- Screens call `LibraryRepository`, never Drift. The account, friends and sync features talk to a separate server (`server/`, see `backend.md`) through `FriendsApi` and `LibrarySyncApi`, both implemented by one `HttpFriendsApi`. The friends client never reads Drift; the sync engine reads and replaces the library only through `LibraryRepository` (`exportData` / `restoreData`). See "Friends client" and "Account sync" below.
 - Domain rules (date precision, validation, search ranking, shelf packing, keepsake thresholds) are plain Dart functions so tests can cover them without widgets.
 - `LibraryRepository.load()` returns an immutable `LibrarySnapshot` (books, completions, sessions, pins) that the UI reads; writes invalidate `libraryProvider`.
 
@@ -57,28 +57,34 @@ presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepos
 | `preferencesProvider` | in-memory by default; file-backed (`preferences.json` in the support directory) in `main.dart`; holds the shelf's sort choice |
 | `bookLookupProvider` | `ServerBookLookup` (server first, `OpenLibraryLookup` as fallback); tests override with a fake |
 | `sessionStoreProvider` | in-memory by default; `SecureSessionStore` (secure storage) in `main.dart`; holds the friends sign-in tokens |
-| `friendsApiProvider` | `HttpFriendsApi` on the session store; tests override with a fake |
+| `serverApiProvider` | the one `HttpFriendsApi` on the session store, shared so friends calls and library saves use the same sign-in and a single token refresh |
+| `friendsApiProvider` | `FriendsApi`, by default `serverApiProvider`; tests override with a fake |
+| `librarySyncApiProvider` | `LibrarySyncApi`, by default `serverApiProvider`; tests override with a fake server |
+| `accountRequiredProvider` | false by default (tests, the demo); `main.dart` overrides it to true, which makes the router demand a signed-in account |
+| `signedInProvider` | `FutureProvider<bool>` from `FriendsApi.signedIn()`, answered from the device's session without the network; invalidated by `resetFriendsData` / `resetAccountData` on sign-in, sign-out, deletion and a lost session |
+| `syncRepositoryProvider` | the plain local repository the sync engine uses (`main.dart` overrides it); defaults to `repositoryProvider`. Distinct from `repositoryProvider`, which `main.dart` wraps in `SyncingRepository`, so a download is not seen as a change to save again |
+| `libraryChangeHookProvider` | the `LibraryChangeHook` shared by `SyncingRepository` and `SyncController` |
 | `contactsSourceProvider` | `DeviceContactsSource` (permission and numbers); tests override with a fake |
 | `regionProvider` | the device's country code (for reading phone numbers written without a country code); tests override |
 
-The friends screens add their own data providers in `lib/features/friends/presentation/friends_providers.dart` (`accountProvider`, `friendsProvider`, `friendRequestsProvider`, `blockedProvider`, `mySharedShelfProvider`, `friendShelfProvider`), invalidated together by `resetFriendsData` on sign-in, sign-out, and account deletion, and an action wrapper `runFriends` that turns failures into messages and a lost session into the sign-in panel.
+`syncEngineProvider` and `syncControllerProvider` live in `lib/features/sync/presentation/sync_controller.dart` (see "Account sync"). The friends screens add their own data providers in `lib/features/friends/presentation/friends_providers.dart` (`accountProvider`, `friendsProvider`, `friendRequestsProvider`, `blockedProvider`, `mySharedShelfProvider`, `friendShelfProvider`), invalidated together (with `signedInProvider`) by `resetFriendsData` on sign-in, sign-out, and account deletion, and an action wrapper `runFriends` that turns failures into messages and a lost session into the sign-in panel.
 
 ## Data model
 
-Schema version **2**, defined in `lib/core/storage/database.dart` with Drift. Foreign keys are on. Ids are UUID strings. Writes that touch several tables run in a transaction.
+Schema version **3**, defined in `lib/core/storage/database.dart` with Drift. Foreign keys are on. Ids are UUID strings. Writes that touch several tables run in a transaction.
 
 | Table | Columns | Notes |
 | --- | --- | --- |
 | `books` | id, title, series_name?, series_number?, created_at, updated_at | catalogue entry; the series columns were added in version 2 (a number needs a name and is 1 or more) |
 | `authors` | id, name | one author per saved book; orphans are pruned |
 | `book_authors` | book_id (cascade), author_id, position | PK (book_id, author_id) |
-| `editions` | id, book_id (cascade), page_count?, language?, cover_local_path?, metadata_source ('manual' or 'open_library') | the selected edition |
+| `editions` | id, book_id (cascade), page_count?, language?, cover_local_path?, cover_source?, metadata_source ('manual' or 'open_library') | the selected edition. `cover_source` (added in version 3) is where an online cover came from, an Open Library address of the form `https://covers.openlibrary.org/b/id/<n>-L.jpg[?default=false]` only (`isOpenLibraryCoverUrl`; `saveBook` and `restoreData` reject anything else); null for a gallery cover |
 | `user_books` | id, book_id (cascade), edition_id, status, current_page (default 0), added_at, updated_at | the reader's copy; status is `reading`, `want_to_read` (shown as Wishlist), or `finished` |
 | `reading_records` | id, user_book_id (cascade), finished_value?, finished_precision, source, created_at | completion claims; source is `tracked_in_app` or `entered_past` |
 | `reading_sessions` | id, user_book_id (cascade), started_at, start_page?, end_page?, duration_seconds?, created_at | the only source of activity |
 | `pins` | id, user_book_id (cascade), text_content, type, page?, progress_percent?, created_at, updated_at | private notes |
 
-Series is a name and a number on the book, not a separate table, so renaming a series means editing each book. Deliberately absent from the plan's model: subtitle, description, ISBNs, publisher, publication year, cover source URL, ratings, start dates, custom shelves.
+Series is a name and a number on the book, not a separate table, so renaming a series means editing each book. Deliberately absent from the plan's model: subtitle, description, ISBNs, publisher, publication year, ratings, start dates, custom shelves.
 
 ### Dates
 
@@ -99,13 +105,13 @@ Envelope: `{ "format": "reading-library", "version": 1, "data": { "version": 1, 
 
 - Export embeds cover bytes under portable keys instead of device paths, and fails clearly if a cover file is missing.
 - Restore checks size (150 MB; covers 20 MB each) and format, rejects keys that are not `[a-zA-Z0-9-]+.cover`, stages cover files under fresh names, then validates every record (values, precisions, relations, pages, pins) and replaces all tables in one transaction. On any failure staged files are deleted and the existing library is untouched.
-- Android automatic backup is disabled; the explicit file is the only copy and contains private notes.
+- Android automatic backup is disabled; the account's saved copy (see "Account sync") and this explicit file are the copies, and both contain private notes. `cover_source` travels in the data, so a restored library can fetch its online covers again.
 
 ## Migrations
 
-`schemaVersion` is 2. `onUpgrade` uses Drift's `stepByStep()` from `lib/core/storage/migrations/schema_versions.dart`; the only step is `from1To2` (two nullable columns on `books`, so existing rows keep their data and simply have no series). An unknown upgrade throws instead of dropping data. Frozen schemas are `drift_schemas/drift_schema_v1.json` and `..._v2.json`, with generated test helpers in `test/generated_migrations/`. `test/migration_test.dart` upgrades the frozen v1 schema to the current one, checks the current schema equals the frozen v2 dump, and checks a v1 library survives with null series. The v1 to v2 upgrade also ran for real on an emulator whose database was still version 1. Procedure for the next version is in the root `README.md`.
+`schemaVersion` is 3. `onUpgrade` uses Drift's `stepByStep()` from `lib/core/storage/migrations/schema_versions.dart`; the steps are `from1To2` (two nullable columns on `books`, so existing rows keep their data and simply have no series) and `from2To3` (one nullable `cover_source` column on `editions`; existing covers have no known source and are not given one). An unknown upgrade throws instead of dropping data. Frozen schemas are `drift_schemas/drift_schema_v1.json`, `..._v2.json` and `..._v3.json`, with generated test helpers in `test/generated_migrations/`. `test/migration_test.dart` upgrades the frozen v1 schema to the current one, upgrades the frozen v2 schema, checks the current schema equals the frozen v3 dump, and checks that a v1 library survives with null series and a v2 library keeps its series and cover path with no cover source. The v1 to v2 upgrade and the v2 to v3 upgrade each ran for real on an emulator whose database was still at the older version (the 51-book seeded library kept every book). Procedure for the next version is in the root `README.md`.
 
-**Backups across versions:** the backup envelope stays at version 1 because the series fields are additive and optional. A backup made before series existed restores (the keys are absent and read as null); an invalid series (number below 1, number without a name, blank name) is rejected and the existing library is left untouched.
+**Backups across versions:** the backup envelope stays at version 1 because the series and cover source fields are additive and optional. A backup made before series existed restores (the keys are absent and read as null); an invalid series (number below 1, number without a name, blank name) is rejected and the existing library is left untouched.
 
 ## Online lookup (`lib/features/book_search`)
 
@@ -117,9 +123,20 @@ Envelope: `{ "format": "reading-library", "version": 1, "data": { "version": 1, 
 
 `packShelves(books, width, keepsakes)` returns rows of `BookSlot` and `KeepsakeSlot` no wider than the width, with keepsakes spaced evenly. `SliverShelf` builds rows lazily in a sliver list so a large library stays cheap. Slot sizes derive from `bookSeed(title)` (a stable FNV-1a hash) and page count. Details in `design-system.md`.
 
+## Account sync (`lib/features/sync/`)
+
+The library is saved to the account as a whole, using the backup data (`exportData`) without cover files. The phone is the source of truth and never waits for the server.
+
+- **Server side:** `libraries` (one row per account: `revision`, JSONB `payload`, `updated_at`), `GET /me/library/meta`, `GET /me/library`, `PUT /me/library` with `{base_revision, data}`; a save whose `base_revision` is not the stored revision is refused with 409 and writes nothing. Details in `backend.md`.
+- **`LibrarySyncApi`** (`sync_models.dart`): `accountId`, `libraryRevision`, `fetchLibrary`, `saveLibrary`; a 409 is `LibraryConflictException`, other failures are `FriendsException` (unreachable, or `signedOut`). `HttpFriendsApi` implements it (responses up to 24 MB for this call, 8 MB otherwise).
+- **`SyncEngine`** (`sync_engine.dart`, plain Dart, no Flutter): state lives in `preferences.json` under `sync.userId`, `sync.revision` (the revision this phone last saw) and `sync.dirty` (changes not yet saved). `markDirty()` also bumps an in-memory counter so a change made while a save is in flight keeps the flag. `sync()` decides: no baseline (first time with this account) and the account empty → save; phone empty → download; both have books → `SyncOutcome.conflict` with both counts; baseline equal → save only if dirty; account newer and phone clean → download; account newer and phone dirty → conflict; account behind the baseline (restored from an old copy) → the phone is the source and saves; a 409 during a save → conflict. `resolve(keepPhone)` saves over the account's revision or downloads. `adopt(userId)` clears the baseline when the account differs from last time; `forget()` is for account deletion. A saved library has every edition's `coverLocalPath` set to null (device paths never leave the phone). A download keeps the cover paths this phone already has for the same edition ids, then `restoreData` validates everything in one transaction; a malformed account copy becomes `SyncOutcome.failed` and leaves the phone untouched (type errors from wrong shapes are turned into a `FormatException`). `fetchMissingCovers()` fetches up to 40 editions that have a `cover_source` and no file, through `BookLookup.fetchCoverFromUrl`, which only contacts Open Library's cover host; failures are retried at the next sync, and attaching a cover (`LibraryRepository.attachCover`) is not a change to save.
+- **`SyncingRepository`** wraps the local repository in `main.dart` and tells the shared `LibraryChangeHook` after every successful write (`saveBook`, `updatePage`, `setStatus`, `logSession`, `addPin`, `deletePin`, `deleteBook`, `restoreData`); reads, `exportData` and cover attachments are not changes.
+- **`SyncController`** (`sync_controller.dart`, a Riverpod `Notifier<SyncState>`): turns a change into `markDirty` and a save 3 s later, runs one sync at a time (a request during a run repeats it), retries after 1 minute when offline, pauses while a conflict waits for the reader, and on `signedOut` invalidates the session so the router returns to `/welcome`. Phases: `off`, `syncing`, `saved`, `waiting`, `conflict`, `problem`. After a download or fetched covers it invalidates `libraryProvider`. Disabled when `accountRequiredProvider` is false or in the demo.
+- **App wiring** (`lib/app/app.dart`): `ReadingLibraryApp` is a `ConsumerStatefulWidget` and a lifecycle observer (saves on resume); the router has a `redirect` that sends everything to `/loading` (session not read yet) or `/welcome` (nobody signed in) and `refreshListenable` tied to `signedInProvider`; a listener shows the conflict dialog (`conflict_dialog.dart`) on the root navigator so it appears wherever the reader is. `welcome_screen.dart` is the account panel full screen.
+
 ## Friends client (`lib/features/friends/`)
 
-Optional and entirely separate from the library. Nothing here runs until the reader opens Friends and acts, and the app never reads or writes the library through it except to build what the reader chose to publish.
+Separate from the library: nothing here reads or writes it except `sharedBooksFrom`, which builds what the reader chose to publish to friends. The account itself (sign-in) is shared with sync.
 
 - `FriendsApi` is the interface; `HttpFriendsApi` implements it against `https://ai.duk-tech.com/books-api` (`HttpFriendsApi.defaultOrigin`; injectable for tests). 8 s connect and 20 s response timeouts, an 8 MB response cap, a `ReadingLibrary/0.1` user agent.
 - **Sessions:** the access and refresh tokens live in `SessionStore` (secure storage in production), never in `preferences.json` and never in a backup. A 401 triggers one refresh (shared by concurrent calls, `_refreshing`) and a retry. Only a refusal by the server ends the session; a network failure, timeout, or server error never signs the reader out.
@@ -136,7 +153,7 @@ Optional and entirely separate from the library. Nothing here runs until the rea
 
 ## Platform configuration
 
-- **Android:** `applicationId` `app.readingroom.reading_library` (a placeholder; change with `tool/set_bundle_id.sh`), Kotlin namespace unchanged. `allowBackup=false`. The main manifest requests `INTERNET` (optional search, and the optional friends server) and `READ_CONTACTS` (only used by "Find friends from contacts"; read-only; checked in the built APK's merged manifest). Nothing else is requested. Release signing reads `android/key.properties`; without it a release build fails unless `READING_LIBRARY_DEBUG_SIGNING=1` is set for a local, non-uploadable build.
+- **Android:** `applicationId` `app.readingroom.reading_library` (a placeholder; change with `tool/set_bundle_id.sh`), Kotlin namespace unchanged. `allowBackup=false`. The main manifest requests `INTERNET` (search, the account and library saving, and friends) and `READ_CONTACTS` (only used by "Find friends from contacts"; read-only; checked in the built APK's merged manifest). Nothing else is requested. Release signing reads `android/key.properties`; without it a release build fails unless `READING_LIBRARY_DEBUG_SIGNING=1` is set for a local, non-uploadable build.
 - **iOS:** bundle id `app.readingroom.readingLibrary` (placeholder), `NSPhotoLibraryUsageDescription` and `NSContactsUsageDescription` set, automatic signing with no team committed. No app-level privacy manifest yet.
 - **CI** (`.github/workflows/checks.yml`): format check, analyze, tests, `tool/check_docs.sh`, debug APK on Linux; unsigned simulator build on macOS.
 - **Release CI** (`.github/workflows/release.yml`): on a `v*` tag, the same checks, then a release APK published as a GitHub Release (signed when the `ANDROID_KEYSTORE_*` secrets exist, otherwise debug-signed and marked pre-release). Helpers: `tool/release_version.sh` (tag must match `pubspec.yaml`), `tool/ci_prepare_signing.sh` (secrets to `android/key.properties`). See `release.md`.
@@ -183,6 +200,12 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/features/history/presentation/journal_screen.dart` | Journal tab: summary, Months / Days / History views, session calendar |
 | `lib/features/book_details/presentation/book_details_screen.dart` | book details, pins, history, remove |
 | `lib/features/settings/presentation/settings_screen.dart` | export, restore, licences |
+| `lib/features/sync/domain/sync_models.dart` | `LibrarySyncApi`, `LibraryRevision`, `RemoteLibrary`, `LibraryConflictException`, `SyncConflict`, `SyncOutcome`, `SyncResult` |
+| `lib/features/sync/data/sync_engine.dart` | `SyncEngine`: decides between saving, downloading and a conflict; saves and downloads the whole library; fetches missing online covers |
+| `lib/features/sync/data/syncing_repository.dart` | `SyncingRepository` (reports every write) and `LibraryChangeHook` |
+| `lib/features/sync/presentation/sync_controller.dart` | `SyncController`, `SyncState`, `SyncPhase`, `syncEngineProvider`, `syncControllerProvider`: when to save, retries, status |
+| `lib/features/sync/presentation/conflict_dialog.dart` | "Which library do you want to keep?" |
+| `lib/features/sync/presentation/welcome_screen.dart` | the full-screen account page shown while nobody is signed in |
 | `lib/features/sharing/data/share_image.dart` | on-device share images; `yearShelf` takes the `LibrarySort`, lists every book, and scales the canvas down above 8000 px tall |
 | `lib/features/friends/domain/friends_models.dart` | `Person`, `Account`, `SharedBook`, `SharedShelf`, `FriendsException`, the `FriendsApi` interface, and `sharedBooksFrom` (what is published) |
 | `lib/features/friends/data/http_friends_api.dart` | `FriendsApi` over HTTPS with `dart:io`: tokens, refresh, error messages |

@@ -4,10 +4,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/storage/backup_service.dart';
 import '../../../core/widgets/common.dart';
+import '../../sync/presentation/sync_controller.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -112,16 +114,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     body: ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        const Eyebrow('Personal by design'),
+        const Eyebrow('Your account'),
         const SizedBox(height: 16),
         Text(
           'Just you.\nAnd your books.',
           style: Theme.of(context).textTheme.headlineLarge,
         ),
         const SizedBox(height: 20),
-        const Text(
-          'Your library, reading history, and private pins are stored on this device. No account is needed, and there is no tracking.',
+        Text(
+          ref.watch(demoProvider)
+              ? 'This is a demo: everything here is a sample and nothing is saved or sent.'
+              : 'Your library, reading history, and private notes are kept on this phone and saved to your account, so they survive a lost or new phone. There is no tracking.',
         ),
+        if (!ref.watch(demoProvider)) const _SaveStatus(),
         const SizedBox(height: 32),
         Text(
           'Keep your collection safe',
@@ -161,7 +166,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'Optional. Make an account to find friends and share a list of the books you have read. Your notes, pins, and reading sessions always stay on this device.',
+            'Find friends and share a list of the books you have read. Friends only see what you publish: titles, authors, status, and finish dates. Never your notes, pins, or reading sessions.',
           ),
           const SizedBox(height: 20),
           OutlinedButton.icon(
@@ -183,4 +188,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ],
     ),
   );
+}
+
+/// Whether the library is saved to the account, with a way to retry now.
+class _SaveStatus extends ConsumerWidget {
+  const _SaveStatus();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(accountRequiredProvider)) return const SizedBox.shrink();
+    final sync = ref.watch(syncControllerProvider);
+    final saved = sync.lastSaved?.toLocal();
+    final text = switch (sync.phase) {
+      SyncPhase.syncing => 'Saving to your account…',
+      SyncPhase.saved =>
+        'Saved to your account${saved == null ? '' : ' at ${DateFormat.yMMMd().add_jm().format(saved)}'}.',
+      SyncPhase.waiting => 'Waiting for a connection. Your changes are safe on this phone and will be saved when it is back.',
+      SyncPhase.conflict => 'Choose which library to keep to continue saving.',
+      SyncPhase.problem =>
+        sync.message ?? 'Your library could not be saved. Try again.',
+      SyncPhase.off => 'Not saved yet.',
+    };
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        children: [
+          Expanded(child: Text(text, style: const TextStyle(height: 1.4))),
+          TextButton(
+            onPressed: sync.phase == SyncPhase.syncing
+                ? null
+                : () => ref.read(syncControllerProvider.notifier).sync(),
+            child: const Text('Save now'),
+          ),
+        ],
+      ),
+    );
+  }
 }

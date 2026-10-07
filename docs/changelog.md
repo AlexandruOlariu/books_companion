@@ -2,6 +2,16 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-07: the library is saved to a required account
+
+- **Decision D38, a privacy change.** The owner asked for everything to be saved in the backend. The app now opens on an account page until someone is signed in, and the whole library (books, dates, sessions, private notes and pins) is saved to the account on the developer's server in the background. The phone is still written first and works offline; changes are saved about 3 s after the last one, on return to the app, and after signing in, and retried every minute while offline. `privacy-policy.md` and `store-privacy.md` were rewritten (the library, notes included, is on the server, readable by the developer, not end-to-end encrypted; an account is required). The demo build needs no account.
+- **Never merged:** a phone and an account that both hold a library show "Which library do you want to keep?" with both book counts; the other is replaced. A newer account copy is downloaded when the phone has no unsaved change. The server refuses a save based on an old revision (409).
+- **Schema version 3:** `editions.cover_source` (Open Library cover address only; checked on save and restore). Online covers are fetched again on a phone that lacks the file; gallery covers and older covers are not recoverable elsewhere. Frozen dump `drift_schema_v3.json`, step `from2To3`, 2 migration tests; the real upgrade kept all 51 books of a seeded emulator library.
+- **Server:** table `libraries`, migration `0002`, `GET /me/library/meta`, `GET` and `PUT /me/library`, 16 tests (72 in all); deployed on this machine. The nginx body limit is raised to 22 MB in `server/deploy/nginx-books-api.conf` and nginx was reloaded by the owner (a 6 MB body then reached the API and got 401, where the old 5 MB limit gave 413).
+- **App:** new `lib/features/sync/` (`SyncEngine`, `SyncingRepository`, `SyncController`, `conflict_dialog.dart`, `welcome_screen.dart`), `LibrarySyncApi` on `HttpFriendsApi`, `FriendsApi.signedIn()`, router gate, Settings saving status with **Save now**, `BookLookup.fetchCoverFromUrl`. 186 Flutter tests (was 138).
+- Account deletion now also erases the saved library; the phone's library stays and is saved again if a new account is made. Copy changed in the add form, Settings, the sign-in panel, and the delete dialog.
+- Verified on the emulator against the real server (see `testing.md`). Not verified: a second real phone, nginx's new limit, iOS.
+
 ## 2026-10-07: Share shelf shows every book, in the Library's order
 
 - Found by the owner testing a real 29-book shelf: **Share shelf** cut the image to 24 covers ("a selection of 24") and ignored the chosen sort. It now includes every finished book and follows the saved Library sort (`librarySortPreference`). The Journal screen became a `ConsumerStatefulWidget` to read it. An image taller than 8000 px is scaled down instead of truncated (not exercised on a device; a 29-book shelf is about 2000 px tall).

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../app/providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../sync/presentation/sync_controller.dart';
 import '../domain/friends_models.dart';
 import 'account_panel.dart';
 import 'find_friends.dart';
@@ -451,6 +452,7 @@ class _AccountActions extends ConsumerWidget {
       return true;
     });
     if (done == true) {
+      await ref.read(syncControllerProvider.notifier).accountDeleted();
       resetFriendsData(ref);
       if (context.mounted) notifyUser(context, 'Your account was deleted.');
     }
@@ -498,7 +500,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
-          'This erases your account, your friend list, and your shared shelf from the server. The library on this device is not affected. This cannot be undone.',
+          'This erases your account, your saved library, your friend list, and your shared shelf from the server. The library on this phone is not affected, and is saved again if you make a new account. This cannot be undone.',
         ),
         const SizedBox(height: 12),
         TextField(

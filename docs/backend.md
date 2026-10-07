@@ -1,6 +1,6 @@
 # Backend (`server/`)
 
-A small Python service that gives readers accounts, friends, and a published shelf their friends can see. It replaces the "share by NFC or share sheet" idea (see D35 in `decisions.md`). The Flutter app has an optional client for it (Settings > Friends and sharing; see `features.md` and `architecture.md`, "Friends client"). The app works fully without an account.
+A small Python service that gives readers accounts, a saved copy of their whole library, friends, and a published shelf their friends can see. It replaces the "share by NFC or share sheet" idea (see D35 in `decisions.md`). The Flutter app requires an account and saves the library to it (D38; see `features.md`, "Account and saving", and `architecture.md`, "Account sync"); friends are optional (Settings > Friends and sharing).
 
 Public address: `https://ai.duk-tech.com/books-api/` (nginx strips the prefix; the service itself serves from `/`).
 
@@ -13,7 +13,7 @@ Public address: `https://ai.duk-tech.com/books-api/` (nginx strips the prefix; t
 | Passwords, tokens | argon2id (`argon2-cffi`); short-lived JWT access tokens (`PyJWT`, HS256); rotating opaque refresh tokens |
 | Phone numbers | `phonenumbers` to normalise, HMAC-SHA256 with a server-side pepper |
 | Runtime | Docker Compose (`server/docker-compose.yml`): `db` (no published port) and `api` (bound to `127.0.0.1:8300`) |
-| Tests | pytest against a real Postgres (56 tests) |
+| Tests | pytest against a real Postgres (72 tests) |
 
 Pinned versions are in `server/requirements.txt` and `server/requirements-dev.txt`.
 
@@ -35,9 +35,10 @@ Pinned versions are in `server/requirements.txt` and `server/requirements-dev.tx
 | `server/app/routers/people.py` | username lookup, contact matching |
 | `server/app/routers/friends.py` | friend requests, friends, blocks |
 | `server/app/routers/shelf.py` | publish and read shelves |
+| `server/app/routers/library.py` | save and read the account's whole library |
 | `server/app/routers/books.py` | book search for the app (no sign-in) |
 | `server/app/booksearch.py` | Open Library search rules, stop words, in-memory cache |
-| `server/migrations/` | Alembic (`0001_initial_schema.py`) |
+| `server/migrations/` | Alembic (`0001_initial_schema.py`, `0002_libraries.py`) |
 | `server/tests/` | pytest suite |
 | `server/Dockerfile`, `server/docker-compose.yml`, `server/.env.example` | packaging and secrets template |
 | `server/deploy/nginx-books-api.conf`, `server/deploy/install-nginx.sh` | the nginx location and a one-time installer |
@@ -51,6 +52,7 @@ All ids are UUIDs. Foreign keys cascade on delete, so deleting a user removes ev
 - `friendships`: one row per pair with `user_a < user_b` enforced by a check constraint, `requested_by`, `status` (`pending` or `accepted`).
 - `blocks`: `(blocker_id, blocked_id)`.
 - `shelves`: one JSONB snapshot per user, replaced whole.
+- `libraries`: one row per user: `revision` (starts at 1, +1 per save), the whole library as JSONB `payload`, `updated_at`.
 - `rate_events`: `(key, cost, created_at)` for rate limiting.
 
 ## API
@@ -74,6 +76,7 @@ Bearer access token on everything except `/auth/*`, `/books/search` and `/health
 | `POST /friends/requests/{id}/accept`, `DELETE /friends/requests/{id}` | accept; decline or cancel |
 | `GET /blocks`, `PUT /blocks/{id}`, `DELETE /blocks/{id}` | block (also removes any friendship), unblock |
 | `PUT /me/shelf`, `GET /me/shelf`, `DELETE /me/shelf` | publish, read, unpublish your snapshot |
+| `GET /me/library/meta`, `GET /me/library`, `PUT /me/library` | the saved library. `meta` is `{revision, updated_at}`; `GET` adds `data`; both 404 when nothing is saved. `PUT {base_revision, data}` saves when `base_revision` equals the stored revision (0 when none) and returns the new `{revision, updated_at}`; otherwise 409 (header `X-Library-Revision`) and nothing is written. See "Saved libraries" |
 | `POST /books/search` | `{q}` (1 to 200 chars); `{approximate, books: [{title, author, page_count, first_publish_year, language, cover_id}]}`. No sign-in. 502 when Open Library cannot be reached. See "Book search" |
 | `GET /friends/{id}/shelf` | a friend's snapshot; 404 for anyone who is not an accepted friend, and for friends who have not published |
 
@@ -85,11 +88,15 @@ A list of books, each with `id`, `title`, `author`, `status` (`reading`, `want_t
 
 Unknown fields are rejected with 422 rather than ignored. Notes, pins, sessions and covers have no field, so a client bug cannot upload a private note. A friend's shelf is shown to the reader as that friend's data; it never enters the reader's own statistics, journal or keepsakes (the rules in `features.md` about invented activity apply).
 
+## Saved libraries
+
+`data` is the app's backup data (`LibraryRepository.exportData`) without cover images: `version: 1` and the lists `books`, `authors`, `bookAuthors`, `editions`, `userBooks`, `records`, `sessions`, `pins`, each a list of objects. The server checks only the shape: the version, that no other table is present and each of those is a list of at most 100000 objects, and the size (20 MB, 413 beyond; nginx allows 22 MB). It does not look inside the rows; the app validates everything again when it restores them. A 422 never echoes the library back. 600 saves per account per hour. The row is replaced whole and the 409 rule stops one phone from overwriting another's newer save, so the server never merges. Unlike a published shelf, a saved library **does** contain private notes, pins and sessions: it is the account's own copy, readable only by that account (no friend endpoint reads it) but readable by whoever runs the server, because it is not encrypted at rest or end to end (D38). Deleting the account cascades to it. Request bodies are not logged.
+
 ## Book search
 
 The app's online search goes through `POST /books/search` so the search rules can be fixed on the server without an app release (D37). The server queries `openlibrary.org/search.json` with its own user agent: the exact text first (or `isbn:` for an ISBN), then, if a query of two or more real words matches nothing, an any-word retry (`a OR b`) labelled `approximate`. Words under 3 letters and common words (`STOP_WORDS`: English, Romanian, a few French, German, Spanish) are left out of the retry, because an any-word query with "the" makes Open Library answer 500 after about 10 s. A failed retry returns the empty exact result; a failed exact search is 502, and the app then asks Open Library itself.
 
-- **No sign-in**, because the app works without an account and an account would tie searches to a person. Rate limit 120 per address per hour.
+- **No sign-in**, because an account would tie searches to a person. Rate limit 120 per address per hour.
 - **The text is in the body, not the URL**, so nginx and uvicorn request logs show only `POST /books/search`. It is never written to the database (tested); answers are cached in memory for 6 hours (500 entries, per worker, lost on restart). Failures are not cached.
 - Only a cover id is returned; the app builds the cover address itself and downloads covers from Open Library directly.
 
@@ -123,7 +130,7 @@ curl http://127.0.0.1:8300/healthz
 curl https://ai.duk-tech.com/books-api/healthz
 ```
 
-Update after a change: `docker compose up -d --build`. Logs: `docker compose logs -f api`. Backup: `docker compose exec db pg_dump -U books books > books.sql`.
+Update after a change: `docker compose up -d --build`. After editing `deploy/nginx-books-api.conf` run `sudo nginx -t && sudo nginx -s reload` (the include points into the repository, so only the reload is needed). Logs: `docker compose logs -f api`. Backup: `docker compose exec db pg_dump -U books books > books.sql`.
 
 Tests need a Postgres whose database name ends in `_test` (the suite drops the schema and refuses anything else):
 
@@ -140,7 +147,7 @@ A model change needs a migration: `alembic revision --autogenerate -m "..."` wit
 The client is built. What the privacy rules required, and where it stands:
 
 1. `privacy-policy.md` and `store-privacy.md` describe accounts, the data sent, contacts, and deletion. Done in the draft; the bracketed items (host location, backup period, URL) are still for the owner to fill in.
-2. The app stays fully usable without an account. Done: Friends is opt-in and sits under Settings.
+2. ~~The app stays fully usable without an account.~~ Reversed by D38: an account is required and the library is saved to it; Friends stays opt-in under Settings. The privacy documents say so.
 3. The reader sees what is published before it is sent (confirmation dialog) and can unpublish (**Stop sharing**). Done.
 4. Contacts are requested only after the reader taps **Find friends from contacts** and confirms a dialog explaining that only phone numbers are sent and not kept. Done; the Android and iOS permission texts say the same.
 5. Account deletion exists in the app (Google Play and the App Store require it). Done. **Google Play also requires a web page for deletion requests; it does not exist yet.**

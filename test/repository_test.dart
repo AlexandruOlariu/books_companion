@@ -218,9 +218,105 @@ void main() {
       expect(
         (await diskDb.customSelect('PRAGMA user_version').getSingle())
             .read<int>('user_version'),
-        2,
+        3,
       );
       await diskDb.close();
     },
   );
+
+  group('cover source', () {
+    const source = 'https://covers.openlibrary.org/b/id/42-L.jpg?default=false';
+
+    test('is kept with the book and travels in the exported data', () async {
+      final id = await repo.saveBook(
+        title: 'Dune',
+        author: 'Frank Herbert',
+        coverPath: '/covers/dune.cover',
+        coverSource: source,
+        status: BookStatus.reading,
+      );
+      final book = (await repo.load()).books.single;
+      expect(book.id, id);
+      expect(
+        (book.coverPath, book.coverSource),
+        ('/covers/dune.cover', source),
+      );
+      final edition = ((await repo.exportData())['editions'] as List).single;
+      expect(edition['coverSource'], source);
+    });
+
+    test('only Open Library cover addresses are accepted', () async {
+      for (final bad in [
+        'https://example.com/c.jpg',
+        'http://covers.openlibrary.org/b/id/42-L.jpg',
+        'https://covers.openlibrary.org.evil.test/b/id/42-L.jpg',
+        'file:///etc/passwd',
+        'https://covers.openlibrary.org/b/id/42-L.jpg?x=1',
+      ]) {
+        expect(isOpenLibraryCoverUrl(bad), isFalse, reason: bad);
+        await expectLater(
+          repo.saveBook(
+            title: 'Dune',
+            author: 'Frank Herbert',
+            coverSource: bad,
+            status: BookStatus.reading,
+          ),
+          throwsFormatException,
+        );
+      }
+      expect(isOpenLibraryCoverUrl(source), isTrue);
+      expect(await repo.load().then((l) => l.books), isEmpty);
+    });
+
+    test(
+      'restoring data with a foreign cover address is refused whole',
+      () async {
+        await add();
+        final data = await repo.exportData();
+        (data['editions'] as List).first['coverSource'] = 'https://evil.test/x';
+        await expectLater(repo.restoreData(data), throwsFormatException);
+        expect((await repo.load()).books, hasLength(1));
+      },
+    );
+
+    test('a cover still to fetch is one with a source and no file', () async {
+      await repo.saveBook(
+        title: 'On the phone',
+        author: 'A',
+        coverPath: '/covers/a.cover',
+        coverSource: source,
+        status: BookStatus.reading,
+      );
+      await repo.saveBook(
+        title: 'Not downloaded',
+        author: 'B',
+        coverSource: source,
+        status: BookStatus.reading,
+      );
+      await repo.saveBook(
+        title: 'Gallery or none',
+        author: 'C',
+        status: BookStatus.reading,
+      );
+      final missing = await repo.coversToFetch();
+      expect(missing, hasLength(1));
+      await repo.attachCover(missing.single.editionId, '/covers/b.cover');
+      expect(await repo.coversToFetch(), isEmpty);
+      final titles = {
+        for (final b in (await repo.load()).books) b.title: b.coverPath,
+      };
+      expect(titles['Not downloaded'], '/covers/b.cover');
+      expect(titles['Gallery or none'], isNull);
+    });
+
+    test('a backup from before cover sources existed still restores', () async {
+      await add();
+      final data = await repo.exportData();
+      for (final e in data['editions'] as List) {
+        (e as Map).remove('coverSource');
+      }
+      await repo.restoreData(data);
+      expect((await repo.load()).books.single.coverSource, isNull);
+    });
+  });
 }

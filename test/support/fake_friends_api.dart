@@ -34,6 +34,9 @@ class FakeFriendsApi implements FriendsApi {
   );
 
   @override
+  Future<bool> signedIn() async => account != null;
+
+  @override
   Future<Account?> me() async => account;
 
   @override

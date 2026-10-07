@@ -67,6 +67,10 @@ const maxSharedBooks = 5000;
 const maxContactNumbersPerCheck = 3000;
 
 abstract class FriendsApi {
+  /// Whether this device holds a session. Answered on the device, so it works
+  /// offline; the server may still have ended the session.
+  Future<bool> signedIn();
+
   /// Null when nobody is signed in on this device.
   Future<Account?> me();
   Future<Account> register({

@@ -950,6 +950,17 @@ class $EditionsTable extends Editions with TableInfo<$EditionsTable, Edition> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _coverSourceMeta = const VerificationMeta(
+    'coverSource',
+  );
+  @override
+  late final GeneratedColumn<String> coverSource = GeneratedColumn<String>(
+    'cover_source',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _metadataSourceMeta = const VerificationMeta(
     'metadataSource',
   );
@@ -969,6 +980,7 @@ class $EditionsTable extends Editions with TableInfo<$EditionsTable, Edition> {
     pageCount,
     language,
     coverLocalPath,
+    coverSource,
     metadataSource,
   ];
   @override
@@ -1017,6 +1029,15 @@ class $EditionsTable extends Editions with TableInfo<$EditionsTable, Edition> {
         ),
       );
     }
+    if (data.containsKey('cover_source')) {
+      context.handle(
+        _coverSourceMeta,
+        coverSource.isAcceptableOrUnknown(
+          data['cover_source']!,
+          _coverSourceMeta,
+        ),
+      );
+    }
     if (data.containsKey('metadata_source')) {
       context.handle(
         _metadataSourceMeta,
@@ -1055,6 +1076,10 @@ class $EditionsTable extends Editions with TableInfo<$EditionsTable, Edition> {
         DriftSqlType.string,
         data['${effectivePrefix}cover_local_path'],
       ),
+      coverSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cover_source'],
+      ),
       metadataSource: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}metadata_source'],
@@ -1074,6 +1099,7 @@ class Edition extends DataClass implements Insertable<Edition> {
   final int? pageCount;
   final String? language;
   final String? coverLocalPath;
+  final String? coverSource;
   final String metadataSource;
   const Edition({
     required this.id,
@@ -1081,6 +1107,7 @@ class Edition extends DataClass implements Insertable<Edition> {
     this.pageCount,
     this.language,
     this.coverLocalPath,
+    this.coverSource,
     required this.metadataSource,
   });
   @override
@@ -1096,6 +1123,9 @@ class Edition extends DataClass implements Insertable<Edition> {
     }
     if (!nullToAbsent || coverLocalPath != null) {
       map['cover_local_path'] = Variable<String>(coverLocalPath);
+    }
+    if (!nullToAbsent || coverSource != null) {
+      map['cover_source'] = Variable<String>(coverSource);
     }
     map['metadata_source'] = Variable<String>(metadataSource);
     return map;
@@ -1114,6 +1144,9 @@ class Edition extends DataClass implements Insertable<Edition> {
       coverLocalPath: coverLocalPath == null && nullToAbsent
           ? const Value.absent()
           : Value(coverLocalPath),
+      coverSource: coverSource == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverSource),
       metadataSource: Value(metadataSource),
     );
   }
@@ -1129,6 +1162,7 @@ class Edition extends DataClass implements Insertable<Edition> {
       pageCount: serializer.fromJson<int?>(json['pageCount']),
       language: serializer.fromJson<String?>(json['language']),
       coverLocalPath: serializer.fromJson<String?>(json['coverLocalPath']),
+      coverSource: serializer.fromJson<String?>(json['coverSource']),
       metadataSource: serializer.fromJson<String>(json['metadataSource']),
     );
   }
@@ -1141,6 +1175,7 @@ class Edition extends DataClass implements Insertable<Edition> {
       'pageCount': serializer.toJson<int?>(pageCount),
       'language': serializer.toJson<String?>(language),
       'coverLocalPath': serializer.toJson<String?>(coverLocalPath),
+      'coverSource': serializer.toJson<String?>(coverSource),
       'metadataSource': serializer.toJson<String>(metadataSource),
     };
   }
@@ -1151,6 +1186,7 @@ class Edition extends DataClass implements Insertable<Edition> {
     Value<int?> pageCount = const Value.absent(),
     Value<String?> language = const Value.absent(),
     Value<String?> coverLocalPath = const Value.absent(),
+    Value<String?> coverSource = const Value.absent(),
     String? metadataSource,
   }) => Edition(
     id: id ?? this.id,
@@ -1160,6 +1196,7 @@ class Edition extends DataClass implements Insertable<Edition> {
     coverLocalPath: coverLocalPath.present
         ? coverLocalPath.value
         : this.coverLocalPath,
+    coverSource: coverSource.present ? coverSource.value : this.coverSource,
     metadataSource: metadataSource ?? this.metadataSource,
   );
   Edition copyWithCompanion(EditionsCompanion data) {
@@ -1171,6 +1208,9 @@ class Edition extends DataClass implements Insertable<Edition> {
       coverLocalPath: data.coverLocalPath.present
           ? data.coverLocalPath.value
           : this.coverLocalPath,
+      coverSource: data.coverSource.present
+          ? data.coverSource.value
+          : this.coverSource,
       metadataSource: data.metadataSource.present
           ? data.metadataSource.value
           : this.metadataSource,
@@ -1185,6 +1225,7 @@ class Edition extends DataClass implements Insertable<Edition> {
           ..write('pageCount: $pageCount, ')
           ..write('language: $language, ')
           ..write('coverLocalPath: $coverLocalPath, ')
+          ..write('coverSource: $coverSource, ')
           ..write('metadataSource: $metadataSource')
           ..write(')'))
         .toString();
@@ -1197,6 +1238,7 @@ class Edition extends DataClass implements Insertable<Edition> {
     pageCount,
     language,
     coverLocalPath,
+    coverSource,
     metadataSource,
   );
   @override
@@ -1208,6 +1250,7 @@ class Edition extends DataClass implements Insertable<Edition> {
           other.pageCount == this.pageCount &&
           other.language == this.language &&
           other.coverLocalPath == this.coverLocalPath &&
+          other.coverSource == this.coverSource &&
           other.metadataSource == this.metadataSource);
 }
 
@@ -1217,6 +1260,7 @@ class EditionsCompanion extends UpdateCompanion<Edition> {
   final Value<int?> pageCount;
   final Value<String?> language;
   final Value<String?> coverLocalPath;
+  final Value<String?> coverSource;
   final Value<String> metadataSource;
   final Value<int> rowid;
   const EditionsCompanion({
@@ -1225,6 +1269,7 @@ class EditionsCompanion extends UpdateCompanion<Edition> {
     this.pageCount = const Value.absent(),
     this.language = const Value.absent(),
     this.coverLocalPath = const Value.absent(),
+    this.coverSource = const Value.absent(),
     this.metadataSource = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1234,6 +1279,7 @@ class EditionsCompanion extends UpdateCompanion<Edition> {
     this.pageCount = const Value.absent(),
     this.language = const Value.absent(),
     this.coverLocalPath = const Value.absent(),
+    this.coverSource = const Value.absent(),
     this.metadataSource = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1244,6 +1290,7 @@ class EditionsCompanion extends UpdateCompanion<Edition> {
     Expression<int>? pageCount,
     Expression<String>? language,
     Expression<String>? coverLocalPath,
+    Expression<String>? coverSource,
     Expression<String>? metadataSource,
     Expression<int>? rowid,
   }) {
@@ -1253,6 +1300,7 @@ class EditionsCompanion extends UpdateCompanion<Edition> {
       if (pageCount != null) 'page_count': pageCount,
       if (language != null) 'language': language,
       if (coverLocalPath != null) 'cover_local_path': coverLocalPath,
+      if (coverSource != null) 'cover_source': coverSource,
       if (metadataSource != null) 'metadata_source': metadataSource,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1264,6 +1312,7 @@ class EditionsCompanion extends UpdateCompanion<Edition> {
     Value<int?>? pageCount,
     Value<String?>? language,
     Value<String?>? coverLocalPath,
+    Value<String?>? coverSource,
     Value<String>? metadataSource,
     Value<int>? rowid,
   }) {
@@ -1273,6 +1322,7 @@ class EditionsCompanion extends UpdateCompanion<Edition> {
       pageCount: pageCount ?? this.pageCount,
       language: language ?? this.language,
       coverLocalPath: coverLocalPath ?? this.coverLocalPath,
+      coverSource: coverSource ?? this.coverSource,
       metadataSource: metadataSource ?? this.metadataSource,
       rowid: rowid ?? this.rowid,
     );
@@ -1296,6 +1346,9 @@ class EditionsCompanion extends UpdateCompanion<Edition> {
     if (coverLocalPath.present) {
       map['cover_local_path'] = Variable<String>(coverLocalPath.value);
     }
+    if (coverSource.present) {
+      map['cover_source'] = Variable<String>(coverSource.value);
+    }
     if (metadataSource.present) {
       map['metadata_source'] = Variable<String>(metadataSource.value);
     }
@@ -1313,6 +1366,7 @@ class EditionsCompanion extends UpdateCompanion<Edition> {
           ..write('pageCount: $pageCount, ')
           ..write('language: $language, ')
           ..write('coverLocalPath: $coverLocalPath, ')
+          ..write('coverSource: $coverSource, ')
           ..write('metadataSource: $metadataSource, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -4417,6 +4471,7 @@ typedef $$EditionsTableCreateCompanionBuilder = EditionsCompanion Function({
   Value<int?> pageCount,
   Value<String?> language,
   Value<String?> coverLocalPath,
+  Value<String?> coverSource,
   Value<String> metadataSource,
   Value<int> rowid,
 });
@@ -4426,6 +4481,7 @@ typedef $$EditionsTableUpdateCompanionBuilder = EditionsCompanion Function({
   Value<int?> pageCount,
   Value<String?> language,
   Value<String?> coverLocalPath,
+  Value<String?> coverSource,
   Value<String> metadataSource,
   Value<int> rowid,
 });
@@ -4496,6 +4552,11 @@ class $$EditionsTableFilterComposer
 
   ColumnFilters<String> get coverLocalPath => $composableBuilder(
     column: $table.coverLocalPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverSource => $composableBuilder(
+    column: $table.coverSource,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4582,6 +4643,11 @@ class $$EditionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get coverSource => $composableBuilder(
+    column: $table.coverSource,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get metadataSource => $composableBuilder(
     column: $table.metadataSource,
     builder: (column) => ColumnOrderings(column),
@@ -4631,6 +4697,11 @@ class $$EditionsTableAnnotationComposer
 
   GeneratedColumn<String> get coverLocalPath => $composableBuilder(
     column: $table.coverLocalPath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get coverSource => $composableBuilder(
+    column: $table.coverSource,
     builder: (column) => column,
   );
 
@@ -4721,6 +4792,7 @@ class $$EditionsTableTableManager
                 Value<int?> pageCount = const Value.absent(),
                 Value<String?> language = const Value.absent(),
                 Value<String?> coverLocalPath = const Value.absent(),
+                Value<String?> coverSource = const Value.absent(),
                 Value<String> metadataSource = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EditionsCompanion(
@@ -4729,6 +4801,7 @@ class $$EditionsTableTableManager
                 pageCount: pageCount,
                 language: language,
                 coverLocalPath: coverLocalPath,
+                coverSource: coverSource,
                 metadataSource: metadataSource,
                 rowid: rowid,
               ),
@@ -4739,6 +4812,7 @@ class $$EditionsTableTableManager
                 Value<int?> pageCount = const Value.absent(),
                 Value<String?> language = const Value.absent(),
                 Value<String?> coverLocalPath = const Value.absent(),
+                Value<String?> coverSource = const Value.absent(),
                 Value<String> metadataSource = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EditionsCompanion.insert(
@@ -4747,6 +4821,7 @@ class $$EditionsTableTableManager
                 pageCount: pageCount,
                 language: language,
                 coverLocalPath: coverLocalPath,
+                coverSource: coverSource,
                 metadataSource: metadataSource,
                 rowid: rowid,
               ),
