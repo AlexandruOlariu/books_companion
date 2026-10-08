@@ -98,7 +98,7 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
 
   @override
   Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(24),
+    padding: screenPadding(context),
     children: [
       const Eyebrow('Your account'),
       const SizedBox(height: 16),

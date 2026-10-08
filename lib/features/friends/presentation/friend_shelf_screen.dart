@@ -127,7 +127,7 @@ class _ShelfList extends StatelessWidget {
       });
     final wishlist = of(BookStatus.wantToRead);
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: screenPadding(context),
       children: [
         Text(
           '${shelf.books.length} books, shared ${DateFormat.yMMMd().format(shelf.updatedAt.toLocal())}. This is a snapshot: it does not change until $name publishes again, and it is not part of your own journal or keepsakes.',

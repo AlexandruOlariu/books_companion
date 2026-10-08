@@ -112,7 +112,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Your reading room')),
     body: ListView(
-      padding: const EdgeInsets.all(24),
+      padding: screenPadding(context),
       children: [
         const Eyebrow('Your account'),
         const SizedBox(height: 16),

@@ -2,6 +2,11 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-08: bottom of pushed screens clear of the system navigation bar
+
+- Bug: on a phone whose Android draws the navigation bar over the app (edge-to-edge), the last item of a pushed screen was half hidden and could not be tapped (**Remove from library** on the book page). Pushed screens have no bottom bar, and a list with explicit padding gets no system inset. New `screenPadding` (`lib/core/widgets/common.dart`) adds the inset to the bottom padding; used by the book page, Settings, Friends, a friend's shelf, the account panel and the add/edit book form. The tabs already sit above their own bar; book search already used `SafeArea`.
+- New `test/system_inset_test.dart` (230 tests, was 229). On the emulator (Pixel_9_Pro, API 36, three-button navigation) the old code cut **Remove from library** off at the bottom, as on the reporter's phone, and the fix shows it fully above the bar. Not checked on the phone that showed the bug.
+
 ## 2026-10-08: ratings
 
 - Decision D41 (amends D6). Finished books can be rated 1 to 5 stars on the book's page, and optionally when adding a book as Finished. Private, never inferred, never shared with friends, no keepsakes. Tap the chosen star again to clear.

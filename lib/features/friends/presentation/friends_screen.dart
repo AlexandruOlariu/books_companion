@@ -73,7 +73,7 @@ class _SignedIn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => ListView(
-    padding: const EdgeInsets.all(24),
+    padding: screenPadding(context),
     children: [
       const Eyebrow('Signed in'),
       const SizedBox(height: 12),

@@ -34,7 +34,7 @@ class BookDetailsScreen extends ConsumerWidget {
               .where((c) => c.userBookId == id)
               .toList();
           return ListView(
-            padding: const EdgeInsets.all(24),
+            padding: screenPadding(context),
             children: [
               Center(
                 child: Hero(

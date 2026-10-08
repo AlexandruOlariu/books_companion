@@ -313,7 +313,7 @@ class _BookFormState extends ConsumerState<BookForm> {
         title: Text(widget.book == null ? 'Add a book' : 'Edit book'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+        padding: screenPadding(context, top: 8, bottom: 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

@@ -191,7 +191,7 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/core/theme/app_theme.dart` | colour tokens and `roomTheme()` |
 | `lib/core/widgets/book_cover.dart` | cover, generated cover, spine, palette, `bookSeed` |
 | `lib/core/widgets/rating_stars.dart` | five-star rating control: 48 px stars, tap the chosen star again to clear, each star labelled "N of 5 stars" with its own tap action |
-| `lib/core/widgets/common.dart` | eyebrow, empty state, snackbar, discard dialog, form sheet |
+| `lib/core/widgets/common.dart` | eyebrow, empty state, snackbar, discard dialog, form sheet, `screenPadding` (bottom inset for full-screen lists) |
 | `lib/features/library/domain/models.dart` | domain classes, `PartialDate`, validation, `LibraryRepository` interface |
 | `lib/features/library/domain/search.dart` | diacritic-insensitive multi-word search and ranking (title, author, series) |
 | `lib/features/library/domain/sorting.dart` | title and author sort keys, series grouping, `LibrarySort`, and `librarySortPreference` (the preferences key for the saved sort, also read by the Journal's Share shelf) |

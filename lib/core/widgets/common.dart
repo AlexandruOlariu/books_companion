@@ -2,6 +2,21 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
+/// Padding for a full-screen scrollable on a pushed route (no bottom bar):
+/// keeps the last item clear of the system navigation bar, which newer
+/// Android versions draw over the app.
+EdgeInsets screenPadding(
+  BuildContext context, {
+  double horizontal = 24,
+  double top = 24,
+  double bottom = 24,
+}) => EdgeInsets.fromLTRB(
+  horizontal,
+  top,
+  horizontal,
+  bottom + MediaQuery.paddingOf(context).bottom,
+);
+
 class Eyebrow extends StatelessWidget {
   final String text;
   const Eyebrow(this.text, {super.key});
