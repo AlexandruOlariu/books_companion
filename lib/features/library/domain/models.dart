@@ -68,6 +68,11 @@ class BookEntry {
   final String id, bookId, editionId, title, author;
   final String? language, coverPath, coverSource, seriesName;
   final int? pageCount, seriesNumber;
+
+  /// The reader's own rating, 1 to [maxRating], or null (not rated). Only the
+  /// reader sets it; it is never inferred, shared with friends, or used for
+  /// keepsakes.
+  final int? rating;
   final int currentPage;
   final BookStatus status;
   const BookEntry({
@@ -83,6 +88,7 @@ class BookEntry {
     this.pageCount,
     this.seriesName,
     this.seriesNumber,
+    this.rating,
     this.currentPage = 0,
   });
 
@@ -97,6 +103,15 @@ class BookEntry {
   String get progressLabel => pageCount == null
       ? 'Page $currentPage'
       : '$currentPage of $pageCount pages';
+}
+
+/// The highest rating; ratings are whole stars from 1 to this.
+const maxRating = 5;
+
+void validateRating(int? rating) {
+  if (rating != null && (rating < 1 || rating > maxRating)) {
+    throw const FormatException('A rating is 1 to 5 stars.');
+  }
 }
 
 class Completion {
@@ -224,6 +239,10 @@ abstract class LibraryRepository {
   Future<void> attachCover(String editionId, String path);
   Future<void> updatePage(String id, int page);
   Future<void> setStatus(String id, BookStatus status, {PartialDate? finish});
+
+  /// Sets (1 to 5) or clears (null) the reader's rating of a book they have
+  /// finished at least once. A rating survives reading the book again.
+  Future<void> setRating(String id, int? rating);
   Future<void> logSession(
     String id,
     DateTime date, {

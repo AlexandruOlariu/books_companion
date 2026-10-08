@@ -7,7 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../../app/providers.dart';
 import '../../../core/storage/cover_store.dart';
 import '../../../core/storage/draft_store.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/rating_stars.dart';
 import '../../book_search/presentation/book_search_screen.dart';
 import '../../history/presentation/finish_date_field.dart';
 import '../domain/models.dart';
@@ -61,6 +63,8 @@ class _BookFormState extends ConsumerState<BookForm> {
   // cover from the gallery has none.
   late String? coverSource = widget.book?.coverSource;
   PartialDate? finish;
+  // Only for a book added as Finished; chosen by the reader, never defaulted.
+  int? rating;
   bool busy = false, dirty = false, allowPop = false, another = false;
   int dateKey = 0;
   String? error, savedMessage;
@@ -179,27 +183,29 @@ class _BookFormState extends ConsumerState<BookForm> {
         );
       }
       final savedTitle = title.text.trim();
-      await ref
-          .read(repositoryProvider)
-          .saveBook(
-            id: widget.book?.id,
-            title: title.text,
-            author: author.text,
-            pageCount: total,
-            language: language.text.trim().isEmpty
-                ? null
-                : language.text.trim(),
-            coverPath: cover,
-            coverSource: coverSource,
-            status: status,
-            finish: finish,
-            // A book added straight as Finished is a remembered finish; books
-            // finished from the Reading tab are recorded as tracked.
-            historical: true,
-            metadataSource: metadataSource,
-            seriesName: series.text,
-            seriesNumber: number,
-          );
+      final repository = ref.read(repositoryProvider);
+      final savedId = await repository.saveBook(
+        id: widget.book?.id,
+        title: title.text,
+        author: author.text,
+        pageCount: total,
+        language: language.text.trim().isEmpty ? null : language.text.trim(),
+        coverPath: cover,
+        coverSource: coverSource,
+        status: status,
+        finish: finish,
+        // A book added straight as Finished is a remembered finish; books
+        // finished from the Reading tab are recorded as tracked.
+        historical: true,
+        metadataSource: metadataSource,
+        seriesName: series.text,
+        seriesNumber: number,
+      );
+      if (widget.book == null &&
+          status == BookStatus.finished &&
+          rating != null) {
+        await repository.setRating(savedId, rating);
+      }
       await draft?.discard();
       ref.invalidate(libraryProvider);
       if (!mounted) return;
@@ -222,6 +228,7 @@ class _BookFormState extends ConsumerState<BookForm> {
           metadataSource = 'manual';
           restored = false;
           finish = null;
+          rating = null;
           dateKey++;
           dirty = false;
           busy = false;
@@ -501,6 +508,7 @@ class _BookFormState extends ConsumerState<BookForm> {
                   setState(() {
                     status = BookStatus.values.byName(v!);
                     finish = null;
+                    rating = null;
                     dateKey++;
                   });
                   changed();
@@ -514,6 +522,22 @@ class _BookFormState extends ConsumerState<BookForm> {
                     finish = v;
                     dirty = true;
                   }),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Your rating (optional)',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                RatingStars(
+                  value: rating,
+                  onChanged: (v) => setState(() {
+                    rating = v;
+                    dirty = true;
+                  }),
+                ),
+                const Text(
+                  'Private: only you see it. Leave it empty if you would rather not rate.',
+                  style: TextStyle(color: RoomColors.muted, fontSize: 13),
                 ),
               ],
               const SizedBox(height: 12),

@@ -21,14 +21,39 @@ void main() {
     },
   );
 
-  test('the current schema matches the frozen version-3 dump', () async {
+  test('the current schema matches the frozen version-4 dump', () async {
     // Fails if a table or column changes without a new schema version and a
     // dump in drift_schemas/.
-    final connection = await verifier.startAt(3);
+    final connection = await verifier.startAt(4);
     final db = AppDatabase(connection);
     addTearDown(db.close);
     await verifier.migrateAndValidate(db, db.schemaVersion);
-    expect(db.schemaVersion, 3);
+    expect(db.schemaVersion, 4);
+  });
+
+  test('a version-3 library upgrades with every book unrated', () async {
+    final schema = await verifier.schemaAt(3);
+    final seeded = AppDatabase(schema.newConnection());
+    await seeded.customStatement('PRAGMA foreign_keys = OFF');
+    final stamp = DateTime(2024, 5, 1).millisecondsSinceEpoch ~/ 1000;
+    await seeded.customStatement(
+      "INSERT INTO books (id, title, created_at, updated_at) VALUES ('b1', 'Dune', $stamp, $stamp)",
+    );
+    await seeded.customStatement(
+      "INSERT INTO editions (id, book_id, page_count, metadata_source) VALUES ('e1', 'b1', 412, 'manual')",
+    );
+    await seeded.customStatement(
+      "INSERT INTO user_books (id, book_id, edition_id, status, current_page, added_at, updated_at) VALUES ('u1', 'b1', 'e1', 'finished', 0, $stamp, $stamp)",
+    );
+    await seeded.close();
+
+    final upgraded = AppDatabase(schema.newConnection());
+    addTearDown(upgraded.close);
+    await verifier.migrateAndValidate(upgraded, upgraded.schemaVersion);
+    final owned = await upgraded.select(upgraded.userBooks).getSingle();
+    expect(owned.status, 'finished');
+    // Nothing is invented: a book read before ratings existed has none.
+    expect(owned.rating, isNull);
   });
 
   test(

@@ -83,11 +83,19 @@ String bookIdentity(String title, String author) =>
 
 String _seriesKey(String name) => titleKey(name);
 
-/// How much the reader has read of each author: finished books, and how many
-/// of those they read again or pinned as a favourite. Keyed by author surname.
+/// How much the reader has read of each author, keyed by author surname.
+/// [finished] counts every finished book; [counted] leaves out books the
+/// reader rated 1 or 2 stars (they did not enjoy them, so those say nothing in
+/// the author's favour); [loved] counts, among those, books rated 4 or 5,
+/// read again, or pinned as a favourite. An author with nothing counted is not
+/// a reason to suggest anything.
 class _Affinity {
-  int finished = 0, loved = 0;
+  int finished = 0, counted = 0, loved = 0;
+  int get weight => counted + loved;
 }
+
+/// Whether the reader rated this book low (1 or 2 stars).
+bool _ratedLow(BookEntry b) => b.rating != null && b.rating! <= 2;
 
 Map<String, _Affinity> _authorAffinity(LibrarySnapshot library) {
   final completions = <String, int>{};
@@ -103,11 +111,16 @@ Map<String, _Affinity> _authorAffinity(LibrarySnapshot library) {
     if (book.status != BookStatus.finished) continue;
     final a = result.putIfAbsent(_surname(book.author), _Affinity.new);
     a.finished++;
-    if ((completions[book.id] ?? 0) > 1 || favourites.contains(book.id)) {
+    if (_ratedLow(book)) continue;
+    a.counted++;
+    if ((book.rating ?? 0) >= 4 ||
+        (completions[book.id] ?? 0) > 1 ||
+        favourites.contains(book.id)) {
       a.loved++;
     }
   }
   result.remove('');
+  result.removeWhere((_, a) => a.counted == 0);
   return result;
 }
 
@@ -119,12 +132,14 @@ String _books(int n) => n == 1 ? '1 book' : '$n books';
 /// - **Next in a series:** for each series with numbered finished books, the
 ///   book after the highest finished number. If it is on the Wishlist it is
 ///   offered to start; if it is not in the library at all it is offered to
-///   add; if it is being read, nothing is offered. The series' real length is
-///   unknown, so the last book of a finished series is offered too; the
-///   reader dismisses it.
+///   add; if it is being read, nothing is offered; if the reader rated that
+///   last finished book 1 or 2 stars, nothing is offered. The series' real
+///   length is unknown, so the last book of a finished series is offered too;
+///   the reader dismisses it.
 /// - **Wishlist by a known author:** Wishlist books whose author the reader has
-///   finished, ordered by how much they have read of that author (finished
-///   books, plus any they read again or pinned as a favourite).
+///   finished (not counting books rated 1 or 2 stars), ordered by how much
+///   they have read of that author (those books, plus any rated 4 or 5, read
+///   again, or pinned as a favourite).
 List<Recommendation> libraryRecommendations(
   LibrarySnapshot library, {
   Set<String> dismissed = const {},
@@ -147,12 +162,20 @@ List<Recommendation> libraryRecommendations(
     );
     if (finished.isEmpty) continue;
     final last = finished.map((b) => b.seriesNumber!).reduce(_max);
+    final lastBook = finished.firstWhere((b) => b.seriesNumber == last);
+    // A volume the reader rated 1 or 2 stars is no reason for the next one.
+    if (_ratedLow(lastBook)) continue;
     final next = last + 1;
     final existing = books.where((b) => b.seriesNumber == next).toList();
     final seriesName = finished.first.seriesName!;
-    final reason = last == 1
-        ? 'You finished book 1 of $seriesName.'
-        : 'You finished ${_books(finished.length)} of $seriesName, up to book $last.';
+    final rated = (lastBook.rating ?? 0) >= 4
+        ? ' You rated book $last ${lastBook.rating} of $maxRating.'
+        : '';
+    final reason =
+        (last == 1
+            ? 'You finished book 1 of $seriesName.'
+            : 'You finished ${_books(finished.length)} of $seriesName, up to book $last.') +
+        rated;
     if (existing.isEmpty) {
       final key = 'series:${entry.key}:$next';
       if (dismissed.contains(key)) continue;
@@ -206,7 +229,7 @@ List<Recommendation> libraryRecommendations(
     final key = 'wish:${book.id}';
     if (a == null || dismissed.contains(key)) continue;
     wishlist.add((
-      weight: a.finished + a.loved,
+      weight: a.weight,
       rec: Recommendation(
         key: key,
         kind: RecommendationKind.wishlistByAuthor,
@@ -217,7 +240,7 @@ List<Recommendation> libraryRecommendations(
         bookId: book.id,
         reason:
             'On your Wishlist. You finished ${_books(a.finished)} by ${book.author}.'
-            '${a.loved > 0 ? ' You read one again or pinned a favourite.' : ''}',
+            '${a.loved > 0 ? ' Includes one you rated highly, read again, or pinned as a favourite.' : ''}',
       ),
     ));
   }
@@ -265,7 +288,7 @@ List<Recommendation> friendRecommendations(
         : '${names.take(2).join(', ')} and ${names.length - 2} more';
     ranked.add((
       friends: names.length,
-      weight: a == null ? 0 : a.finished + a.loved,
+      weight: a?.weight ?? 0,
       rec: Recommendation(
         key: key,
         kind: RecommendationKind.friendsRead,

@@ -11,7 +11,8 @@ class LocalLibraryRepository implements LibraryRepository {
   @override
   Future<LibrarySnapshot> load() async {
     final rows = await db.customSelect('''
-      SELECT u.id, u.book_id, u.edition_id, u.status, u.current_page, b.title,
+      SELECT u.id, u.book_id, u.edition_id, u.status, u.current_page, u.rating,
+        b.title,
         b.series_name, b.series_number,
         e.page_count, e.language, e.cover_local_path, e.cover_source,
         (SELECT group_concat(name, ', ') FROM
@@ -31,6 +32,7 @@ class LocalLibraryRepository implements LibraryRepository {
               author: r.readNullable<String>('author') ?? '',
               status: BookStatus.values.byName(r.read('status')),
               currentPage: r.read('current_page'),
+              rating: r.readNullable('rating'),
               pageCount: r.readNullable('page_count'),
               seriesName: r.readNullable('series_name'),
               seriesNumber: r.readNullable('series_number'),
@@ -294,6 +296,23 @@ class LocalLibraryRepository implements LibraryRepository {
         );
       });
   @override
+  Future<void> setRating(String id, int? rating) => db.transaction(() async {
+    validateRating(rating);
+    await _owned(id);
+    final finished = await (db.select(
+      db.readingRecords,
+    )..where((r) => r.userBookId.equals(id))).get();
+    if (rating != null && finished.isEmpty) {
+      throw const FormatException('Rate a book after you have finished it.');
+    }
+    await (db.update(db.userBooks)..where((u) => u.id.equals(id))).write(
+      UserBooksCompanion(
+        rating: Value(rating),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  });
+  @override
   Future<void> logSession(
     String id,
     DateTime date, {
@@ -454,6 +473,11 @@ class LocalLibraryRepository implements LibraryRepository {
       }
       totals[u.id] = edition.pageCount;
       validatePage(u.currentPage, edition.pageCount);
+      // Absent in backups made before ratings existed (read as unrated).
+      validateRating(u.rating);
+      if (u.rating != null && !records.any((r) => r.userBookId == u.id)) {
+        throw const FormatException('A rating needs a finished book.');
+      }
       if (u.status == BookStatus.finished.name &&
           !records.any((r) => r.userBookId == u.id)) {
         throw const FormatException('Finished book has no history.');

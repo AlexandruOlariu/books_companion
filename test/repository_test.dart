@@ -218,7 +218,7 @@ void main() {
       expect(
         (await diskDb.customSelect('PRAGMA user_version').getSingle())
             .read<int>('user_version'),
-        3,
+        4,
       );
       await diskDb.close();
     },
@@ -317,6 +317,96 @@ void main() {
       }
       await repo.restoreData(data);
       expect((await repo.load()).books.single.coverSource, isNull);
+    });
+  });
+  group('rating', () {
+    const known = PartialDate.unknown();
+    Future<String> finished() =>
+        add(status: BookStatus.finished, finish: known);
+    Future<int?> ratingOf(String id) async =>
+        (await repo.load()).books.singleWhere((b) => b.id == id).rating;
+
+    test('a finished book can be rated, changed, and cleared', () async {
+      final id = await finished();
+      expect(await ratingOf(id), isNull, reason: 'never rated by default');
+      await repo.setRating(id, 4);
+      expect(await ratingOf(id), 4);
+      await repo.setRating(id, 2);
+      expect(await ratingOf(id), 2);
+      await repo.setRating(id, null);
+      expect(await ratingOf(id), isNull);
+    });
+
+    test('only 1 to 5 stars, and only after a finish', () async {
+      final id = await finished();
+      for (final bad in [0, 6, -1]) {
+        await expectLater(repo.setRating(id, bad), throwsFormatException);
+      }
+      expect(await ratingOf(id), isNull);
+      final unread = await add(status: BookStatus.wantToRead);
+      await expectLater(repo.setRating(unread, 5), throwsFormatException);
+      await expectLater(repo.setRating('nope', 3), throwsA(anything));
+      // Clearing is always allowed.
+      await repo.setRating(unread, null);
+    });
+
+    test('a rating survives reading the book again and editing it', () async {
+      final id = await finished();
+      await repo.setRating(id, 5);
+      await repo.setStatus(id, BookStatus.reading);
+      expect(await ratingOf(id), 5, reason: 'a reread keeps its rating');
+      await repo.saveBook(
+        id: id,
+        title: 'A book, edited',
+        author: 'An author',
+        pageCount: 200,
+        status: BookStatus.reading,
+      );
+      expect(await ratingOf(id), 5);
+    });
+
+    test('rating changes neither history nor activity', () async {
+      final id = await finished();
+      await repo.setRating(id, 3);
+      final data = await repo.load();
+      expect(data.completions, hasLength(1));
+      expect(data.sessions, isEmpty);
+    });
+
+    test('ratings round-trip through export and restore', () async {
+      final id = await finished();
+      await repo.setRating(id, 4);
+      final data = await repo.exportData();
+      final other = LocalLibraryRepository(
+        AppDatabase(NativeDatabase.memory()),
+      );
+      addTearDown(other.db.close);
+      await other.restoreData(data);
+      expect((await other.load()).books.single.rating, 4);
+    });
+
+    test('a backup from before ratings restores as unrated', () async {
+      final id = await finished();
+      await repo.setRating(id, 4);
+      final data = await repo.exportData();
+      for (final row in data['userBooks'] as List) {
+        (row as Map).remove('rating');
+      }
+      await repo.restoreData(data);
+      expect((await repo.load()).books.single.rating, isNull);
+    });
+
+    test('a restore rejects a bad rating and keeps the library', () async {
+      final id = await finished();
+      await repo.setRating(id, 3);
+      final tooHigh = await repo.exportData();
+      ((tooHigh['userBooks'] as List).single as Map)['rating'] = 9;
+      await expectLater(repo.restoreData(tooHigh), throwsA(anything));
+      final unfinished = await repo.exportData();
+      (unfinished['records'] as List).clear();
+      ((unfinished['userBooks'] as List).single as Map)['status'] = 'reading';
+      await expectLater(repo.restoreData(unfinished), throwsA(anything));
+      expect(await ratingOf(id), 3, reason: 'the library is unchanged');
     });
   });
 }

@@ -6,6 +6,7 @@ import '../../../app/providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/book_cover.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/rating_stars.dart';
 import '../../library/domain/models.dart';
 import '../../reading/presentation/reading_actions.dart';
 import '../../sharing/data/share_image.dart';
@@ -55,6 +56,33 @@ class BookDetailsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Center(child: Chip(label: Text(book.status.label))),
+              if (records.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Center(
+                  child: RatingStars(
+                    value: book.rating,
+                    onChanged: (rating) async {
+                      try {
+                        await ref
+                            .read(repositoryProvider)
+                            .setRating(id, rating);
+                        ref.invalidate(libraryProvider);
+                      } catch (e) {
+                        if (context.mounted) {
+                          notifyUser(context, readableError(e));
+                        }
+                      }
+                    },
+                  ),
+                ),
+                Text(
+                  book.rating == null
+                      ? 'Your rating: not rated. Only you see it.'
+                      : 'Your rating: ${book.rating} of $maxRating. Only you see it.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: RoomColors.muted, fontSize: 13),
+                ),
+              ],
               const SizedBox(height: 20),
               if (book.status == BookStatus.reading) ...[
                 Text(book.progressLabel, textAlign: TextAlign.center),

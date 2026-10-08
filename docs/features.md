@@ -11,6 +11,7 @@ This is the behavioural specification of the working POC, written from the code.
 3. Only logged **sessions** create activity: pages logged, minutes, calendar colour. Page updates, corrections, and past finishes never do.
 4. Shelf keepsakes are earned by the count of finished books only. Never by streaks, pages, time, or opening the app.
 5. Personal notes (pins) are never generated automatically. They are kept on the phone and saved to the reader's own account; friends never see them.
+6. A rating is the reader's own word. It is never asked for, defaulted, or inferred (finishing a book does not mean liking it), never shared with friends, and never earns a keepsake.
 
 ## Wishlist
 
@@ -75,6 +76,10 @@ Fields: Title, Author (one text field, one author), **Series** and **Book number
 - Validation messages appear inline and the typed input is kept. Dirty forms ask before discarding.
 - **Drafts:** unsaved new-book input survives the app being killed (see Drafts). A form opened from a suggestion starts from the suggestion and neither reads nor replaces that draft.
 
+### Ratings
+
+A book finished at least once (including one being read again) shows five stars on its details page, with "Your rating: not rated. Only you see it." or "Your rating: 4 of 5. Only you see it." Tap a star to rate; tap the chosen star again to clear it. A Wishlist book, or one never finished, has no stars. A rating belongs to the book, so reading it again keeps it, and changing it never touches history, sessions, or pins. A book added as **Finished** shows an optional "Your rating (optional)" row in the add form ("Private: only you see it. Leave it empty if you would rather not rate."); changing the choice away from Finished drops a chosen rating. Existing books and old backups are unrated. Ratings are saved with the library to the reader's account (see Account and saving), included in backups, and are never part of what **Share my shelf** publishes. They appear nowhere else yet except in suggestions (see "What to read next").
+
 ### Finish date ("When did you finish it?")
 
 Four explicit precisions, no default: **Exact date** (date picker, cannot be in the future), **Month and year**, **Year only**, **I don't remember** ("Saved in All time, without an invented date."). Saving requires a choice; the date picker needs an explicit pick.
@@ -101,10 +106,10 @@ An editorial heading ("In good company.") and one card per book with status Read
 
 ### What to read next
 
-At the end of the Reading tab, a section "What to read next" appears when there is something to suggest, and is absent otherwise. Suggestions never change the library: the only things they do are open a book already on the Wishlist, or open the add form with some fields filled in (the reader checks and saves it, or leaves). Each card says why it is shown, never has a cover from a friend, and has **Not interested** (hides it for good on this phone, with **Undo**). There are no ratings, so "liked" is never guessed from finishing alone.
+At the end of the Reading tab, a section "What to read next" appears when there is something to suggest, and is absent otherwise. Suggestions never change the library: the only things they do are open a book already on the Wishlist, or open the add form with some fields filled in (the reader checks and saves it, or leaves). Each card says why it is shown, never has a cover from a friend, and has **Not interested** (hides it for good on this phone, with **Undo**). Finishing a book is never read as liking it: "liked" comes only from a rating of 4 or 5, a Favorite pin, or reading the book again.
 
-- **Continue a series:** for a series where numbered books are finished, the book after the highest finished number. If it is on the Wishlist: "You finished book 1 of S. It is on your Wishlist." with **Open book**. If it is not in the library: "S, book N", "You finished 2 books of S, up to book 2. Book 3 is not on your shelf." with **Add to Wishlist**, which opens the add form with the author, series, and number filled and the title empty (the title of a book not yet seen is not known). Nothing is offered if the next book is already being read. The length of a series is unknown, so the last volume of a finished series is offered too; **Not interested** removes it.
-- **From your Wishlist:** Wishlist books by an author the reader has finished: "On your Wishlist. You finished 2 books by X." Authors read more, or one the reader read again or pinned as a Favorite (added to the reason), come first.
+- **Continue a series:** for a series where numbered books are finished, the book after the highest finished number (not offered when the reader rated that last finished book 1 or 2 stars; "You rated book 3 5 of 5." is added to the reason when it was rated 4 or 5). If it is on the Wishlist: "You finished book 1 of S. It is on your Wishlist." with **Open book**. If it is not in the library: "S, book N", "You finished 2 books of S, up to book 2. Book 3 is not on your shelf." with **Add to Wishlist**, which opens the add form with the author, series, and number filled and the title empty (the title of a book not yet seen is not known). Nothing is offered if the next book is already being read. The length of a series is unknown, so the last volume of a finished series is offered too; **Not interested** removes it.
+- **From your Wishlist:** Wishlist books by an author the reader has finished: "On your Wishlist. You finished 2 books by X." Books rated 1 or 2 stars say nothing in an author's favour (an author with only such books is not suggested). Authors read more come first, and so do those with a book rated 4 or 5, read again, or pinned as a Favorite ("Includes one you rated highly, read again, or pinned as a favourite." is added to the reason).
 - **Your friends finished:** books friends finished that the reader does not have in any status: "Finished by Ana and Bob." (more than two: "Ana, Bob and 2 more"), adding "You finished N books by X." when that is true. **Add to Wishlist** opens the add form with title and author filled. Friends' shelves are read-only here: they never add books, dates, activity, or keepsakes. If the reader has no friends, is offline, or the server fails, this group is simply absent. Not shown in the demo.
 - At most five suggestions per group.
 
@@ -122,7 +127,7 @@ A private note with type (Thought, Favorite, Quote, Question, Idea; default Thou
 
 ## Book details (`/book/:id`)
 
-Cover, title, author, status chip, and the main action (Update page / Start reading / Read again), then **Finish book** or **Share book** (finished books). Sections: **Pins** (with **Add pin**), **History** (finishes: "Entered from memory" or "Finished in your reading journal", then sessions with pages and minutes), **Details** (pages, language, **Edit edition and cover**), and a separated destructive **Remove from library** (confirmation; deletes the book, history, sessions, and pins).
+Cover, title, author, status chip, **your rating** (for a book finished at least once; see Ratings), and the main action (Update page / Start reading / Read again), then **Finish book** or **Share book** (finished books). Sections: **Pins** (with **Add pin**), **History** (finishes: "Entered from memory" or "Finished in your reading journal", then sessions with pages and minutes), **Details** (pages, language, **Edit edition and cover**), and a separated destructive **Remove from library** (confirmation; deletes the book, history, sessions, and pins).
 
 ## Journal tab
 
@@ -143,7 +148,7 @@ On-device images only, through the native share sheet; nothing is uploaded and t
 
 ## Account and saving (`/welcome`, `/loading`)
 
-An account is required (decision D38). Screenshots (sample library from `dev_seed`, a throwaway account): `screenshots/friends-sign-in.png` (the account page), `account-conflict.png`, `settings-saved.png`. With nobody signed in, every route redirects to `/welcome`: the sign-in and create-account panel, headed "Your reading room, kept safe." (`/loading` is a spinner shown for the moment it takes to read the device's session). The panel says what is saved: name, username and email, and the whole library (books, finish dates, reading sessions, private notes and pins), kept on the developer's server and **not end-to-end encrypted**; covers found online are fetched again from Open Library, photos the reader chose stay on the phone; friends only see what the reader publishes. Whether someone is signed in is known on the device, so the app opens offline once a session exists.
+An account is required (decision D38). Screenshots (sample library from `dev_seed`, a throwaway account): `screenshots/friends-sign-in.png` (the account page), `account-conflict.png`, `settings-saved.png`. With nobody signed in, every route redirects to `/welcome`: the sign-in and create-account panel, headed "Your reading room, kept safe." (`/loading` is a spinner shown for the moment it takes to read the device's session). The panel says what is saved: name, username and email, and the whole library (books, finish dates, ratings, reading sessions, private notes and pins), kept on the developer's server and **not end-to-end encrypted**; covers found online are fetched again from Open Library, photos the reader chose stay on the phone; friends only see what the reader publishes. Whether someone is signed in is known on the device, so the app opens offline once a session exists.
 
 **What is saved, and when.** The library is written to the phone first, always. Shortly after a change (about 3 seconds after the last one, so a burst is one save), when the app returns to the foreground, and after signing in, the whole library is saved to the account. Offline, changes wait on the phone and are retried every minute and on return to the app; nothing is lost and nothing blocks. Settings shows "Saving to your account…", "Saved to your account at <date and time>.", "Waiting for a connection. Your changes are safe on this phone and will be saved when it is back.", or a problem, with **Save now**.
 
@@ -198,4 +203,4 @@ Every tap target is at least 48 x 48. Books, spines, and keepsakes expose labels
 
 ## Not implemented
 
-Password reset, email or phone verification, changing the password or profile from the app, friend notifications, automatic or background sharing, cloud sync of the library, a web app, notifications, payments, ISBN camera scanning, ratings, custom shelves, remembered start dates, editing a recorded finish date, multiple authors per book, dark theme, and process-death recovery beyond the drafts above. See `implementation-status.md` for what is unverified on real devices.
+Password reset, email or phone verification, changing the password or profile from the app, friend notifications, automatic or background sharing, cloud sync of the library, a web app, notifications, payments, ISBN camera scanning, sharing or showing ratings anywhere except the book's own page and suggestions, custom shelves, remembered start dates, editing a recorded finish date, multiple authors per book, dark theme, and process-death recovery beyond the drafts above. See `implementation-status.md` for what is unverified on real devices.

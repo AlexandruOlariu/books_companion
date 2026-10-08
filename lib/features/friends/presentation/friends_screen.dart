@@ -126,7 +126,7 @@ class _ShelfSharingState extends ConsumerState<_ShelfSharing> {
       builder: (c) => AlertDialog(
         title: Text('Share ${books.length} books with your friends?'),
         content: const Text(
-          'They will see each title, author, status, and finish date, exactly as you recorded it (a year stays a year). Your notes, pins, reading sessions, and covers are never shared. Only accepted friends can see it, and you can stop sharing at any time.',
+          'They will see each title, author, status, and finish date, exactly as you recorded it (a year stays a year). Your ratings, notes, pins, reading sessions, and covers are never shared. Only accepted friends can see it, and you can stop sharing at any time.',
         ),
         actions: [
           TextButton(

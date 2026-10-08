@@ -75,6 +75,9 @@ class SyncingRepository implements LibraryRepository {
   Future<void> setStatus(String id, BookStatus status, {PartialDate? finish}) =>
       _changed(inner.setStatus(id, status, finish: finish));
   @override
+  Future<void> setRating(String id, int? rating) =>
+      _changed(inner.setRating(id, rating));
+  @override
   Future<void> logSession(
     String id,
     DateTime date, {

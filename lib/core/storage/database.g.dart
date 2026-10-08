@@ -1424,6 +1424,15 @@ class $UserBooksTable extends UserBooks
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _ratingMeta = const VerificationMeta('rating');
+  @override
+  late final GeneratedColumn<int> rating = GeneratedColumn<int>(
+    'rating',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _currentPageMeta = const VerificationMeta(
     'currentPage',
   );
@@ -1464,6 +1473,7 @@ class $UserBooksTable extends UserBooks
     bookId,
     editionId,
     status,
+    rating,
     currentPage,
     addedAt,
     updatedAt,
@@ -1508,6 +1518,12 @@ class $UserBooksTable extends UserBooks
       );
     } else if (isInserting) {
       context.missing(_statusMeta);
+    }
+    if (data.containsKey('rating')) {
+      context.handle(
+        _ratingMeta,
+        rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta),
+      );
     }
     if (data.containsKey('current_page')) {
       context.handle(
@@ -1559,6 +1575,10 @@ class $UserBooksTable extends UserBooks
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      rating: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rating'],
+      ),
       currentPage: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}current_page'],
@@ -1585,6 +1605,7 @@ class UserBook extends DataClass implements Insertable<UserBook> {
   final String bookId;
   final String editionId;
   final String status;
+  final int? rating;
   final int currentPage;
   final DateTime addedAt;
   final DateTime updatedAt;
@@ -1593,6 +1614,7 @@ class UserBook extends DataClass implements Insertable<UserBook> {
     required this.bookId,
     required this.editionId,
     required this.status,
+    this.rating,
     required this.currentPage,
     required this.addedAt,
     required this.updatedAt,
@@ -1604,6 +1626,9 @@ class UserBook extends DataClass implements Insertable<UserBook> {
     map['book_id'] = Variable<String>(bookId);
     map['edition_id'] = Variable<String>(editionId);
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || rating != null) {
+      map['rating'] = Variable<int>(rating);
+    }
     map['current_page'] = Variable<int>(currentPage);
     map['added_at'] = Variable<DateTime>(addedAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1616,6 +1641,9 @@ class UserBook extends DataClass implements Insertable<UserBook> {
       bookId: Value(bookId),
       editionId: Value(editionId),
       status: Value(status),
+      rating: rating == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rating),
       currentPage: Value(currentPage),
       addedAt: Value(addedAt),
       updatedAt: Value(updatedAt),
@@ -1632,6 +1660,7 @@ class UserBook extends DataClass implements Insertable<UserBook> {
       bookId: serializer.fromJson<String>(json['bookId']),
       editionId: serializer.fromJson<String>(json['editionId']),
       status: serializer.fromJson<String>(json['status']),
+      rating: serializer.fromJson<int?>(json['rating']),
       currentPage: serializer.fromJson<int>(json['currentPage']),
       addedAt: serializer.fromJson<DateTime>(json['addedAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -1645,6 +1674,7 @@ class UserBook extends DataClass implements Insertable<UserBook> {
       'bookId': serializer.toJson<String>(bookId),
       'editionId': serializer.toJson<String>(editionId),
       'status': serializer.toJson<String>(status),
+      'rating': serializer.toJson<int?>(rating),
       'currentPage': serializer.toJson<int>(currentPage),
       'addedAt': serializer.toJson<DateTime>(addedAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -1656,6 +1686,7 @@ class UserBook extends DataClass implements Insertable<UserBook> {
     String? bookId,
     String? editionId,
     String? status,
+    Value<int?> rating = const Value.absent(),
     int? currentPage,
     DateTime? addedAt,
     DateTime? updatedAt,
@@ -1664,6 +1695,7 @@ class UserBook extends DataClass implements Insertable<UserBook> {
     bookId: bookId ?? this.bookId,
     editionId: editionId ?? this.editionId,
     status: status ?? this.status,
+    rating: rating.present ? rating.value : this.rating,
     currentPage: currentPage ?? this.currentPage,
     addedAt: addedAt ?? this.addedAt,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -1674,6 +1706,7 @@ class UserBook extends DataClass implements Insertable<UserBook> {
       bookId: data.bookId.present ? data.bookId.value : this.bookId,
       editionId: data.editionId.present ? data.editionId.value : this.editionId,
       status: data.status.present ? data.status.value : this.status,
+      rating: data.rating.present ? data.rating.value : this.rating,
       currentPage: data.currentPage.present
           ? data.currentPage.value
           : this.currentPage,
@@ -1689,6 +1722,7 @@ class UserBook extends DataClass implements Insertable<UserBook> {
           ..write('bookId: $bookId, ')
           ..write('editionId: $editionId, ')
           ..write('status: $status, ')
+          ..write('rating: $rating, ')
           ..write('currentPage: $currentPage, ')
           ..write('addedAt: $addedAt, ')
           ..write('updatedAt: $updatedAt')
@@ -1702,6 +1736,7 @@ class UserBook extends DataClass implements Insertable<UserBook> {
     bookId,
     editionId,
     status,
+    rating,
     currentPage,
     addedAt,
     updatedAt,
@@ -1714,6 +1749,7 @@ class UserBook extends DataClass implements Insertable<UserBook> {
           other.bookId == this.bookId &&
           other.editionId == this.editionId &&
           other.status == this.status &&
+          other.rating == this.rating &&
           other.currentPage == this.currentPage &&
           other.addedAt == this.addedAt &&
           other.updatedAt == this.updatedAt);
@@ -1724,6 +1760,7 @@ class UserBooksCompanion extends UpdateCompanion<UserBook> {
   final Value<String> bookId;
   final Value<String> editionId;
   final Value<String> status;
+  final Value<int?> rating;
   final Value<int> currentPage;
   final Value<DateTime> addedAt;
   final Value<DateTime> updatedAt;
@@ -1733,6 +1770,7 @@ class UserBooksCompanion extends UpdateCompanion<UserBook> {
     this.bookId = const Value.absent(),
     this.editionId = const Value.absent(),
     this.status = const Value.absent(),
+    this.rating = const Value.absent(),
     this.currentPage = const Value.absent(),
     this.addedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -1743,6 +1781,7 @@ class UserBooksCompanion extends UpdateCompanion<UserBook> {
     required String bookId,
     required String editionId,
     required String status,
+    this.rating = const Value.absent(),
     this.currentPage = const Value.absent(),
     required DateTime addedAt,
     required DateTime updatedAt,
@@ -1758,6 +1797,7 @@ class UserBooksCompanion extends UpdateCompanion<UserBook> {
     Expression<String>? bookId,
     Expression<String>? editionId,
     Expression<String>? status,
+    Expression<int>? rating,
     Expression<int>? currentPage,
     Expression<DateTime>? addedAt,
     Expression<DateTime>? updatedAt,
@@ -1768,6 +1808,7 @@ class UserBooksCompanion extends UpdateCompanion<UserBook> {
       if (bookId != null) 'book_id': bookId,
       if (editionId != null) 'edition_id': editionId,
       if (status != null) 'status': status,
+      if (rating != null) 'rating': rating,
       if (currentPage != null) 'current_page': currentPage,
       if (addedAt != null) 'added_at': addedAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -1780,6 +1821,7 @@ class UserBooksCompanion extends UpdateCompanion<UserBook> {
     Value<String>? bookId,
     Value<String>? editionId,
     Value<String>? status,
+    Value<int?>? rating,
     Value<int>? currentPage,
     Value<DateTime>? addedAt,
     Value<DateTime>? updatedAt,
@@ -1790,6 +1832,7 @@ class UserBooksCompanion extends UpdateCompanion<UserBook> {
       bookId: bookId ?? this.bookId,
       editionId: editionId ?? this.editionId,
       status: status ?? this.status,
+      rating: rating ?? this.rating,
       currentPage: currentPage ?? this.currentPage,
       addedAt: addedAt ?? this.addedAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -1811,6 +1854,9 @@ class UserBooksCompanion extends UpdateCompanion<UserBook> {
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
+    }
+    if (rating.present) {
+      map['rating'] = Variable<int>(rating.value);
     }
     if (currentPage.present) {
       map['current_page'] = Variable<int>(currentPage.value);
@@ -1834,6 +1880,7 @@ class UserBooksCompanion extends UpdateCompanion<UserBook> {
           ..write('bookId: $bookId, ')
           ..write('editionId: $editionId, ')
           ..write('status: $status, ')
+          ..write('rating: $rating, ')
           ..write('currentPage: $currentPage, ')
           ..write('addedAt: $addedAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -4915,6 +4962,7 @@ typedef $$UserBooksTableCreateCompanionBuilder = UserBooksCompanion Function({
   required String bookId,
   required String editionId,
   required String status,
+  Value<int?> rating,
   Value<int> currentPage,
   required DateTime addedAt,
   required DateTime updatedAt,
@@ -4925,6 +4973,7 @@ typedef $$UserBooksTableUpdateCompanionBuilder = UserBooksCompanion Function({
   Value<String> bookId,
   Value<String> editionId,
   Value<String> status,
+  Value<int?> rating,
   Value<int> currentPage,
   Value<DateTime> addedAt,
   Value<DateTime> updatedAt,
@@ -5043,6 +5092,11 @@ class $$UserBooksTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rating => $composableBuilder(
+    column: $table.rating,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5202,6 +5256,11 @@ class $$UserBooksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get rating => $composableBuilder(
+    column: $table.rating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get currentPage => $composableBuilder(
     column: $table.currentPage,
     builder: (column) => ColumnOrderings(column),
@@ -5278,6 +5337,9 @@ class $$UserBooksTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get rating =>
+      $composableBuilder(column: $table.rating, builder: (column) => column);
 
   GeneratedColumn<int> get currentPage => $composableBuilder(
     column: $table.currentPage,
@@ -5450,6 +5512,7 @@ class $$UserBooksTableTableManager
                 Value<String> bookId = const Value.absent(),
                 Value<String> editionId = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<int?> rating = const Value.absent(),
                 Value<int> currentPage = const Value.absent(),
                 Value<DateTime> addedAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -5459,6 +5522,7 @@ class $$UserBooksTableTableManager
                 bookId: bookId,
                 editionId: editionId,
                 status: status,
+                rating: rating,
                 currentPage: currentPage,
                 addedAt: addedAt,
                 updatedAt: updatedAt,
@@ -5470,6 +5534,7 @@ class $$UserBooksTableTableManager
                 required String bookId,
                 required String editionId,
                 required String status,
+                Value<int?> rating = const Value.absent(),
                 Value<int> currentPage = const Value.absent(),
                 required DateTime addedAt,
                 required DateTime updatedAt,
@@ -5479,6 +5544,7 @@ class $$UserBooksTableTableManager
                 bookId: bookId,
                 editionId: editionId,
                 status: status,
+                rating: rating,
                 currentPage: currentPage,
                 addedAt: addedAt,
                 updatedAt: updatedAt,

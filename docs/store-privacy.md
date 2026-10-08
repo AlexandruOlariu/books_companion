@@ -24,8 +24,8 @@ form and check any answer you are unsure of.
   (sign-in, saving the library after changes and when the app returns to the
   foreground, friends).
 - The server receives: first and last name, username, email, a password hash,
-  **the whole library (books, finish dates, reading sessions, private notes and
-  pins, series, page counts, language, cover addresses)**, friend requests and
+  **the whole library (books, finish dates, ratings, reading sessions, private
+  notes and pins, series, page counts, language, cover addresses)**, friend requests and
   friends, and, only when the reader taps Share my shelf, each book's title,
   author, status, and finish dates (the part friends see). If the
   reader adds a phone number, a keyed hash of it. Contact phone numbers are
@@ -42,8 +42,8 @@ form and check any answer you are unsure of.
 - Collects or shares data with the developer: **Yes, for every user (an account
   is required).** Declare, as collected and linked to the user, required for app
   functionality: **Name**, **Email address**, **User IDs** (username),
-  **Other user-generated content** (the library: books, reading dates, sessions,
-  and private notes), **App activity** (reading sessions, if the form counts
+  **Other user-generated content** (the library: books, reading dates, ratings,
+  sessions, and private notes), **App activity** (reading sessions, if the form counts
   them separately), and, optional, **Phone number** (hashed; only if added).
   Not shared with third parties, not used for advertising or analytics. Say
   that data is **not** end-to-end encrypted.

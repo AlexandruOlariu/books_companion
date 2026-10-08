@@ -11,6 +11,7 @@ void main() {
     String? series,
     int? number,
     String? id,
+    int? rating,
   }) {
     final i = id ?? 'b${n++}';
     return BookEntry(
@@ -22,6 +23,7 @@ void main() {
       status: status,
       seriesName: series,
       seriesNumber: number,
+      rating: rating,
     );
   }
 
@@ -199,6 +201,49 @@ void main() {
       expect(recs.first.title, 'Ann next');
     });
 
+    test('a low rating cancels a series follow-up; a high one is quoted', () {
+      LibrarySnapshot s(int? rating) => library([
+        book('One', 'A B', finished, series: 'S', number: 1, rating: 5),
+        book('Two', 'A B', finished, series: 'S', number: 2, rating: rating),
+      ]);
+      expect(libraryRecommendations(s(2)), isEmpty);
+      expect(libraryRecommendations(s(1)), isEmpty);
+      expect(libraryRecommendations(s(3)), hasLength(1));
+      expect(libraryRecommendations(s(null)), hasLength(1));
+      expect(
+        libraryRecommendations(s(5)).single.reason,
+        contains('You rated book 2 5 of 5.'),
+      );
+    });
+
+    test('books rated 1 or 2 stars say nothing in an author\'s favour', () {
+      LibrarySnapshot s(List<int?> ratings, {String author = 'Ann Lee'}) =>
+          library([
+            for (final (i, r) in ratings.indexed)
+              book('Read $i', author, finished, rating: r),
+            book('Next', author, wishlist),
+          ]);
+      expect(libraryRecommendations(s([1])), isEmpty);
+      expect(libraryRecommendations(s([2, 1])), isEmpty);
+      final mixed = libraryRecommendations(s([1, null])).single;
+      expect(mixed.reason, contains('finished 2 books by'));
+      expect(mixed.reason, isNot(contains('rated highly')));
+    });
+
+    test('a rating of 4 or 5 counts as loved and ranks higher', () {
+      final recs = libraryRecommendations(
+        library([
+          book('A1', 'Ann Lee', finished, rating: 3),
+          book('B1', 'Bob Ray', finished, rating: 5),
+          book('Ann next', 'Ann Lee', wishlist),
+          book('Bob next', 'Bob Ray', wishlist),
+        ]),
+      );
+      expect([for (final r in recs) r.title], ['Bob next', 'Ann next']);
+      expect(recs.first.reason, contains('rated highly'));
+      expect(recs.last.reason, isNot(contains('rated highly')));
+    });
+
     test('dismissed suggestions stay hidden', () {
       final books = [
         book('One', 'A B', finished, series: 'S', number: 1),
@@ -301,6 +346,19 @@ void main() {
         ),
         isEmpty,
       );
+    });
+
+    test('friends\' books by a disliked author are not tied to affinity', () {
+      final recs = friendRecommendations(
+        library([book('Bad', 'Zed Quill', finished, rating: 1)]),
+        [
+          FriendShelf(
+            name: 'Ana',
+            books: const [SharedTitle('Zed2', 'Zed Quill')],
+          ),
+        ],
+      );
+      expect(recs.single.reason, 'Finished by Ana.');
     });
 
     test('identity ignores case, diacritics, articles and name order', () {

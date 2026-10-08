@@ -29,7 +29,7 @@ See the final verification notes below for execution results. Tests cover partia
 - Final icon review and store-size screenshots from a seeded build.
 - Cover paths are stored as absolute paths. If iOS relocates the app container (for example restoring a device backup to a new device), covers would need re-resolving against the current documents directory; this has not been observed here and needs checking on iOS.
 - Open product question: Google Books as a cover fallback (`decisions.md` D19), and whether keepsakes count only in-app finishes (D23).
-- Custom shelves, ratings, editable history, and more advanced statistics are follow-ups.
+- Custom shelves, editable history, and more advanced statistics are follow-ups.
 - Account sync (D38): try it on two real phones and on a real device offline; decide on end-to-end encryption of notes; add a password reset (a lost password now means a lost saved copy); fill in the server location and backup period in `privacy-policy.md` and add the Play web deletion page. A first install without a connection cannot get past the account page.
 
 ## Executed checks — 6 October 2026

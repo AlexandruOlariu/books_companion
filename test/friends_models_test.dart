@@ -19,6 +19,34 @@ Completion done(String bookId, PartialDate date) => Completion(
 );
 
 void main() {
+  test('a rating is private: it has no field in what is published', () {
+    BookEntry rated(int? rating) => BookEntry(
+      id: '1',
+      bookId: 'b',
+      editionId: 'e',
+      title: 'Dune',
+      author: 'Frank Herbert',
+      status: BookStatus.finished,
+      rating: rating,
+    );
+    List<String> published(int? rating) => [
+      for (final b in sharedBooksFrom(
+        LibrarySnapshot(
+          books: [rated(rating)],
+          completions: [done('1', PartialDate(DatePrecision.year, '2021'))],
+        ),
+      ))
+        [
+          b.id,
+          b.title,
+          b.author,
+          b.status,
+          for (final f in b.finishes) f.value,
+        ].join('|'),
+    ];
+    expect(published(5), published(null));
+  });
+
   test('only titles, authors, status, and finish dates are published', () {
     final shared = sharedBooksFrom(
       LibrarySnapshot(

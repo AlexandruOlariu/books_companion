@@ -55,6 +55,9 @@ class UserBooks extends Table {
       text().references(Books, #id, onDelete: KeyAction.cascade)();
   TextColumn get editionId => text().references(Editions, #id)();
   TextColumn get status => text()();
+  // Added in schema version 4: the reader's own rating, 1 to 5, or null. Set
+  // only by the reader, never inferred, and never shared with friends.
+  IntColumn get rating => integer().nullable()();
   IntColumn get currentPage => integer().withDefault(const Constant(0))();
   DateTimeColumn get addedAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
@@ -116,7 +119,7 @@ class Pins extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
@@ -133,6 +136,10 @@ class AppDatabase extends _$AppDatabase {
       // 2 -> 3: where an online cover came from. Existing rows have none.
       from2To3: (m, schema) async {
         await m.addColumn(schema.editions, schema.editions.coverSource);
+      },
+      // 3 -> 4: the reader's rating of a book. Existing rows are unrated.
+      from3To4: (m, schema) async {
+        await m.addColumn(schema.userBooks, schema.userBooks.rating);
       },
     ),
     beforeOpen: (_) async {

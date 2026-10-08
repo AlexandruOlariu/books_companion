@@ -71,7 +71,7 @@ presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepos
 
 ## Data model
 
-Schema version **3**, defined in `lib/core/storage/database.dart` with Drift. Foreign keys are on. Ids are UUID strings. Writes that touch several tables run in a transaction.
+Schema version **4**, defined in `lib/core/storage/database.dart` with Drift. Foreign keys are on. Ids are UUID strings. Writes that touch several tables run in a transaction.
 
 | Table | Columns | Notes |
 | --- | --- | --- |
@@ -79,12 +79,12 @@ Schema version **3**, defined in `lib/core/storage/database.dart` with Drift. Fo
 | `authors` | id, name | one author per saved book; orphans are pruned |
 | `book_authors` | book_id (cascade), author_id, position | PK (book_id, author_id) |
 | `editions` | id, book_id (cascade), page_count?, language?, cover_local_path?, cover_source?, metadata_source ('manual' or 'open_library') | the selected edition. `cover_source` (added in version 3) is where an online cover came from, an Open Library address of the form `https://covers.openlibrary.org/b/id/<n>-L.jpg[?default=false]` only (`isOpenLibraryCoverUrl`; `saveBook` and `restoreData` reject anything else); null for a gallery cover |
-| `user_books` | id, book_id (cascade), edition_id, status, current_page (default 0), added_at, updated_at | the reader's copy; status is `reading`, `want_to_read` (shown as Wishlist), or `finished` |
+| `user_books` | id, book_id (cascade), edition_id, status, rating?, current_page (default 0), added_at, updated_at | the reader's copy; status is `reading`, `want_to_read` (shown as Wishlist), or `finished`. `rating` (added in version 4) is a whole number 1 to 5 or null; it belongs to the reader's copy, so a reread keeps it |
 | `reading_records` | id, user_book_id (cascade), finished_value?, finished_precision, source, created_at | completion claims; source is `tracked_in_app` or `entered_past` |
 | `reading_sessions` | id, user_book_id (cascade), started_at, start_page?, end_page?, duration_seconds?, created_at | the only source of activity |
 | `pins` | id, user_book_id (cascade), text_content, type, page?, progress_percent?, created_at, updated_at | private notes |
 
-Series is a name and a number on the book, not a separate table, so renaming a series means editing each book. Deliberately absent from the plan's model: subtitle, description, ISBNs, publisher, publication year, ratings, start dates, custom shelves.
+Series is a name and a number on the book, not a separate table, so renaming a series means editing each book. Deliberately absent from the plan's model: subtitle, description, ISBNs, publisher, publication year, start dates, custom shelves. (Ratings were absent until version 4, D41.)
 
 ### Dates
 
@@ -97,6 +97,7 @@ Series is a name and a number on the book, not a separate table, so renaming a s
 - Editing an edition is rejected if it would invalidate current page, existing sessions, or pins.
 - `setStatus(finished)` requires a finish, refuses an already-finished book, and writes a record.
 - `deleteBook` cascades and prunes orphan authors.
+- `setRating(id, rating)`: 1 to 5 or null (`validateRating`, `maxRating`); a number needs at least one reading record (never rated before a finish); null always allowed; it does not touch status, records, sessions, or pins. Editing a book or reading it again leaves the rating. Adding a book as Finished sets it afterwards through `setRating`, so one validation path covers both.
 - Pins: non-empty text, a known type, page within the total, percent in 0..100.
 
 ## Backup and restore (`lib/core/storage/backup_service.dart`)
@@ -109,9 +110,9 @@ Envelope: `{ "format": "reading-library", "version": 1, "data": { "version": 1, 
 
 ## Migrations
 
-`schemaVersion` is 3. `onUpgrade` uses Drift's `stepByStep()` from `lib/core/storage/migrations/schema_versions.dart`; the steps are `from1To2` (two nullable columns on `books`, so existing rows keep their data and simply have no series) and `from2To3` (one nullable `cover_source` column on `editions`; existing covers have no known source and are not given one). An unknown upgrade throws instead of dropping data. Frozen schemas are `drift_schemas/drift_schema_v1.json`, `..._v2.json` and `..._v3.json`, with generated test helpers in `test/generated_migrations/`. `test/migration_test.dart` upgrades the frozen v1 schema to the current one, upgrades the frozen v2 schema, checks the current schema equals the frozen v3 dump, and checks that a v1 library survives with null series and a v2 library keeps its series and cover path with no cover source. The v1 to v2 upgrade and the v2 to v3 upgrade each ran for real on an emulator whose database was still at the older version (the 51-book seeded library kept every book). Procedure for the next version is in the root `README.md`.
+`schemaVersion` is 4. `onUpgrade` uses Drift's `stepByStep()` from `lib/core/storage/migrations/schema_versions.dart`; the steps are `from1To2` (two nullable columns on `books`, so existing rows keep their data and simply have no series), `from2To3` (one nullable `cover_source` column on `editions`; existing covers have no known source and are not given one), and `from3To4` (one nullable `rating` column on `user_books`; existing books are unrated). An unknown upgrade throws instead of dropping data. Frozen schemas are `drift_schemas/drift_schema_v1.json`, `..._v2.json`, `..._v3.json` and `..._v4.json`, with generated test helpers in `test/generated_migrations/`. `test/migration_test.dart` upgrades the frozen v1 schema to the current one, upgrades the frozen v2 schema, checks the current schema equals the frozen v4 dump, upgrades a seeded v3 library with every book unrated, and checks that a v1 library survives with null series and a v2 library keeps its series and cover path with no cover source. The v1 to v2 upgrade and the v2 to v3 upgrade each ran for real on an emulator whose database was still at the older version (the 51-book seeded library kept every book); the v3 to v4 upgrade ran the same way on 2026-10-08 (a 52-book library and its signed-in account opened normally on the new build). Procedure for the next version is in the root `README.md`.
 
-**Backups across versions:** the backup envelope stays at version 1 because the series and cover source fields are additive and optional. A backup made before series existed restores (the keys are absent and read as null); an invalid series (number below 1, number without a name, blank name) is rejected and the existing library is left untouched.
+**Backups across versions:** the backup envelope stays at version 1 because the series, cover source and rating fields are additive and optional (a backup without `rating` restores as unrated; a rating outside 1 to 5, or on a book with no finish, makes the restore refuse and leave the library unchanged). A backup made before series existed restores (the keys are absent and read as null); an invalid series (number below 1, number without a name, blank name) is rejected and the existing library is left untouched.
 
 ## Online lookup (`lib/features/book_search`)
 
@@ -151,7 +152,7 @@ Separate from the library: nothing here reads or writes it except `sharedBooksFr
 
 The rules are plain Dart in `domain/recommendations.dart` and take a `LibrarySnapshot`; they read nothing else and write nothing.
 
-- `libraryRecommendations(library, dismissed:)`: groups books by series (`titleKey` of the series name). For a series with numbered finished books it looks at number `max finished + 1`: absent from the library gives `nextInSeries` (no title is known, so the card heading is "Series, book N"); a Wishlist book gives `nextOnWishlist`; anything else (being read) gives nothing. Then Wishlist books whose author the reader has finished (`wishlistByAuthor`), ordered by `finished + loved` for that author, where loved counts finished books read more than once or with a pin of type Favorite. Authors compare by surname (`authorKey`, first word). At most 5 per group (`maxPerGroup`).
+- `libraryRecommendations(library, dismissed:)`: groups books by series (`titleKey` of the series name). For a series with numbered finished books it looks at number `max finished + 1` (skipped when the highest finished volume is rated 1 or 2 stars; quoted in the reason when rated 4 or 5): absent from the library gives `nextInSeries` (no title is known, so the card heading is "Series, book N"); a Wishlist book gives `nextOnWishlist`; anything else (being read) gives nothing. Then Wishlist books whose author the reader has finished (`wishlistByAuthor`), ordered by `counted + loved` for that author. `counted` is finished books not rated 1 or 2 stars (an author with none counted gives no suggestion); `loved` is, among those, books rated 4 or 5, read more than once, or with a pin of type Favorite. Authors compare by surname (`authorKey`, first word). At most 5 per group (`maxPerGroup`).
 - `friendRecommendations(library, shelves, dismissed:)`: finished books on friends' shelves, minus any book already in the library in any status (`bookIdentity` = `titleKey|surname`, so case, diacritics, a leading article and "Surname, Given" do not matter). Ordered by number of distinct friends, then author affinity, then title; at most 5.
 - A suggestion's `key` (`series:<series key>:<n>`, `wish:<book id>`, `friend:<identity>`) is what "Not interested" remembers. `dismissedRecommendationsProvider` stores the keys as a JSON list (newest last, capped at 500) under the preferences key `dismissedRecommendations`: a device preference like the sort order, so never part of a backup, the account copy, or the server.
 - `friendShelvesForSuggestionsProvider` reads `friendsProvider` and, for up to 30 friends, `friendShelfProvider(id)` (the same cached calls the Friends screens use), keeping only finished books as title and author. It returns an empty list when the build is the demo, nobody is signed in, or any call fails, so the section degrades to library-only suggestions. No new endpoint, field, or request body: the reader sends nothing new.
@@ -189,6 +190,7 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/core/storage/session_store.dart` | friends sign-in tokens: memory store and secure-storage store |
 | `lib/core/theme/app_theme.dart` | colour tokens and `roomTheme()` |
 | `lib/core/widgets/book_cover.dart` | cover, generated cover, spine, palette, `bookSeed` |
+| `lib/core/widgets/rating_stars.dart` | five-star rating control: 48 px stars, tap the chosen star again to clear, each star labelled "N of 5 stars" with its own tap action |
 | `lib/core/widgets/common.dart` | eyebrow, empty state, snackbar, discard dialog, form sheet |
 | `lib/features/library/domain/models.dart` | domain classes, `PartialDate`, validation, `LibraryRepository` interface |
 | `lib/features/library/domain/search.dart` | diacritic-insensitive multi-word search and ranking (title, author, series) |

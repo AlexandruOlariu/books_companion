@@ -2,6 +2,14 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-08: ratings
+
+- Decision D41 (amends D6). Finished books can be rated 1 to 5 stars on the book's page, and optionally when adding a book as Finished. Private, never inferred, never shared with friends, no keepsakes. Tap the chosen star again to clear.
+- **Schema version 4:** `user_books.rating` (nullable), step `from3To4`, frozen dump `drift_schema_v4.json`, a migration test. `LibraryRepository.setRating`; backups and the account copy carry `rating` (envelope still version 1; old backups restore unrated; restore refuses a bad rating). The server is unchanged.
+- Suggestions use it: 1 or 2 stars do not count towards an author and stop the next volume of that series; 4 or 5 stars count as loved and are quoted in the reason.
+- **Privacy:** ratings are saved to the account with the rest of the library (they were not stored before). Sign-in panel text, the share-shelf dialog ("Your ratings, notes, pins... are never shared"), `privacy-policy.md` and `store-privacy.md` now name ratings.
+- New `lib/core/widgets/rating_stars.dart`; a test found that a labelled star had no tap action for screen readers and it was fixed. 229 tests (was 208). On the emulator the v3 to v4 upgrade kept the 52-book library and the signed-in account, and tapping five stars showed "Your rating: 5 of 5."; not checked on a device: that the rating survives an app restart and reaches the server copy.
+
 ## 2026-10-08: "What to read next" suggestions
 
 - Decision D40. The Reading tab ends with a **What to read next** section: the next book of a series being finished (offered from the Wishlist or as "Series, book N" to add), Wishlist books by authors already finished, and books friends finished that the reader lacks. Each says why; **Not interested** hides it on this phone (with Undo); nothing is added unless the reader saves the add form, which `/add` can now open prefilled (`title`, `author`, `series`, `number`; `BookPrefill`). No ratings, no catalogue, no AI.

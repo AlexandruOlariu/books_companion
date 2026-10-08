@@ -40,7 +40,7 @@ The sample library is created only by `lib/demo.dart`, `lib/dev_seed.dart`, and 
 
 `PartialDate` stores `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, or null alongside its precision. It never pads remembered years or months with invented days. `UserBook.currentPage` records position; `ReadingSession` records activity. Rereading keeps earlier completions.
 
-The database is schema version 3. Future upgrades must add an explicit non-destructive migration and an old-schema fixture test. Unknown upgrade paths fail instead of deleting a library. Cover imports are copied to the app documents directory. Android automatic cloud backup is disabled; the explicit local backup contains private notes and should be stored accordingly.
+The database is schema version 4. Future upgrades must add an explicit non-destructive migration and an old-schema fixture test. Unknown upgrade paths fail instead of deleting a library. Cover imports are copied to the app documents directory. Android automatic cloud backup is disabled; the explicit local backup contains private notes and should be stored accordingly.
 
 ## Validation
 
@@ -68,6 +68,6 @@ Full documentation is in `docs/` (start with `docs/README.md`): features, archit
 
 ## First-release decisions
 
-Manual entry always works. Optional Open Library search (title, author, or ISBN) fills the form on request and saves everything locally. Ratings, custom shelves, and optional remembered start dates are deferred. The current app stores the independently precise finish date. The yearly share card displays up to 24 distinct covers and labels a larger collection as a selection. Backup restore replaces the current library after an explicit confirmation; it does not merge libraries.
+Manual entry always works. Optional Open Library search (title, author, or ISBN) fills the form on request and saves everything locally. Custom shelves and optional remembered start dates are deferred; ratings were added later (D41). The current app stores the independently precise finish date. The yearly share card displays up to 24 distinct covers and labels a larger collection as a selection. Backup restore replaces the current library after an explicit confirmation; it does not merge libraries.
 
 This is a working development build, not a store-ready release. iOS compilation/native flows, physical-device performance, screen-reader exploration, interrupted-process drafts, release signing, and store packaging require the checks described in the status document.

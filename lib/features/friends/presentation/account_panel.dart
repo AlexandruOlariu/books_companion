@@ -177,7 +177,7 @@ class _PrivacyNote extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
     ),
     child: const Text(
-      'What is saved: your name, username, and email, and your whole library: books, finish dates, reading sessions, and your private notes and pins. It is kept on the developer\'s server and is not end-to-end encrypted. Covers found online are fetched again from Open Library; photos you chose yourself stay on this phone. Friends only ever see what you choose to publish: titles, authors, status, and finish dates.',
+      'What is saved: your name, username, and email, and your whole library: books, finish dates, ratings, reading sessions, and your private notes and pins. It is kept on the developer\'s server and is not end-to-end encrypted. Covers found online are fetched again from Open Library; photos you chose yourself stay on this phone. Friends only ever see what you choose to publish: titles, authors, status, and finish dates.',
       style: TextStyle(height: 1.5),
     ),
   );

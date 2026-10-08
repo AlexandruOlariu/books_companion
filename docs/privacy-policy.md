@@ -13,7 +13,7 @@ and share a list of the books you have read (see "Friends and sharing").
 
 ## What is on your phone
 
-Your books, covers, reading dates, progress, sessions, and private notes are
+Your books, covers, reading dates, ratings, progress, sessions, and private notes are
 stored on your phone first, and the app works without a connection. Automatic
 cloud backup is disabled on Android. Photos you choose as covers stay on your
 phone; they are never uploaded.
@@ -50,7 +50,7 @@ server. Changes made offline wait on your phone and are saved later.
 
 **What is saved:** every book with its title, author, page count, language,
 series, status, and finish dates exactly as you recorded them; your reading
-progress and reading sessions; and your **private notes and pins**. For a cover
+progress and reading sessions; your **ratings** (1 to 5 stars, only if you give them); and your **private notes and pins**. For a cover
 that came from Open Library, only its address on Open Library's cover host is
 saved, so another phone can download it again; the picture itself is not saved,
 and covers you chose from your own photos are not saved at all.
@@ -80,8 +80,8 @@ Nothing in this section happens unless you use Friends.
   readable form).
 - If you tap **Share my shelf** and confirm: for each book, its title, author,
   status (reading, wishlist, finished), and finish dates exactly as you
-  recorded them (a remembered year stays a year). Nothing else: no notes, pins,
-  reading sessions, progress, series, or covers. Publishing again replaces the
+  recorded them (a remembered year stays a year). Nothing else: no ratings,
+  notes, pins, reading sessions, progress, series, or covers. Publishing again replaces the
   earlier copy, and **Stop sharing** deletes it.
 - Your friend requests, friends, and blocked people.
 - If you add a phone number and switch on "Let people find me by phone": a
