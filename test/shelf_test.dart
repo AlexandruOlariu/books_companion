@@ -191,7 +191,8 @@ void main() {
         of: find.byType(SliverShelf),
         matching: find.byIcon(icon),
       );
-      expect(onShelf(Icons.check), findsOneWidget);
+      // A finished book has no seal; Reading and Wishlist books do.
+      expect(onShelf(Icons.check), findsNothing);
       expect(onShelf(Icons.favorite_border), findsOneWidget);
       await tester.tap(
         find.bySemanticsLabel(RegExp('Waiting, Someone, Wishlist')),

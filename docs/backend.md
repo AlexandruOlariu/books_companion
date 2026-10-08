@@ -114,7 +114,7 @@ The app's online search goes through `POST /books/search` so the search rules ca
 - **Phone numbers are not verified.** There is no SMS check, so someone can claim a number that is not theirs. The damage is bounded (they appear under their own chosen name to people who have that number, and a request must still be accepted), but it is real. Verification needs an SMS provider, which is a cost and a new data processor.
 - **No email verification and no password reset.** Both need a mailer. A forgotten password currently means a lost account. Registration reports "email already taken", which reveals that an address has an account (rate limited).
 - **No push notifications**, so a friend request is only seen when the app asks.
-- **No change of password or profile in the app yet.** The server supports them (`POST /me/password`, `PATCH /me`); the client does not call them.
+- **Email cannot be changed.** Name, username and password can be changed in the app (`PATCH /me`, `POST /me/password`); the server has no endpoint for the email address.
 - **Logs contain searched usernames:** `GET /users/lookup?username=` puts the username in nginx's and uvicorn's request line. Request bodies are not logged.
 - **Access tokens cannot be revoked before they expire** (15 minutes); deleting an account or changing a password takes effect on the next refresh, although the deleted user's token stops working immediately because the user row is gone.
 - A single host, a single Postgres container, no replication. Back up the `books-db` volume and `server/.env` (the pepper especially: without it every stored phone hash is useless).

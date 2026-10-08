@@ -38,7 +38,8 @@ class BookCover extends StatelessWidget {
   final bool spine;
 
   /// Adds a [StatusBadge], so the shelf shows at a glance which books are being
-  /// read, wished for, or finished.
+  /// read or wished for. A finished book has no seal (finished is the quiet,
+  /// default state), see [hasStatusBadge].
   final bool showStatus;
   const BookCover({
     super.key,
@@ -50,6 +51,7 @@ class BookCover extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final sealed = showStatus && hasStatusBadge(book.status);
     final color = bookPalette[bookSeed(book.title) % bookPalette.length];
     final cover = book.coverPath;
     // Generated typography is cover artwork; the accessible title is outside it.
@@ -159,7 +161,7 @@ class BookCover extends StatelessWidget {
                         quarterTurns: 3,
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(
-                            showStatus ? 44 : 28,
+                            sealed ? 44 : 28,
                             6,
                             28,
                             6,
@@ -232,7 +234,7 @@ class BookCover extends StatelessWidget {
                     color: const Color(0xFFDBBA78),
                   ),
                 ),
-              if (showStatus)
+              if (sealed)
                 Positioned(
                   bottom: spine ? 22 : 8,
                   left: spine ? (width - 20) / 2 : null,

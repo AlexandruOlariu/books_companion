@@ -77,7 +77,9 @@ Nothing in this section happens unless you use Friends.
 
 - When you create an account: your first and last name, a username, your email
   address, and your password (stored only as a salted one-way hash, never in
-  readable form).
+  readable form). You can change your name, username and password later from
+  the app's account page; the server receives the new values (and, for a
+  password change, the current password to check it) and stores them the same way.
 - If you tap **Share my shelf** and confirm: for each book, its title, author,
   status (reading, wishlist, finished), and finish dates exactly as you
   recorded them (a remembered year stays a year). Nothing else: no ratings,

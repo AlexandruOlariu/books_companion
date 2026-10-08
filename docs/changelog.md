@@ -2,6 +2,14 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-08: account page, finished books lose their seal, suggestions that refresh
+
+- **Your account** (`/account`, Settings > **Edit my account**): the reader can change first name, last name and username, and the password. New `lib/features/friends/presentation/account_screen.dart` and `domain/account_rules.dart`; `FriendsApi` gained `updateProfile` (`PATCH /me`, only changed fields) and `changePassword` (`POST /me/password`, stores the fresh tokens). The server already supported both; only the client was missing (backend.md updated). Decision D43. Sign out and delete stay on the Friends page; the email cannot be changed yet.
+- **Privacy:** two new client calls to the same server, carrying the same kinds of data the account already holds (name, username, password for the check). `docs/privacy-policy.md` now says the account page can change them; `store-privacy.md` needs no change (same data types, nothing new collected).
+- **Finished books no longer carry a seal** on the shelf (the owner asked); the Finished and All chips lose theirs too. Reading and Wishlist keep theirs. Amends D42.
+- **"What to read next" did nothing for a reader whose friends were added later** (a friend's real report). Cause: friends' shelves were read through session-long cached providers, so a first look with no friend, or before the friend had published, stayed empty until the app restarted. Now each visit asks again (remembered for a minute; an empty or failed answer is not remembered). Second cause, by design: a reader with books but no series, Wishlist by a known author or friends got no section at all, which looked broken; it now says what makes an idea appear. Decision D44. What Bianca's phone really showed was not inspected (her library is private).
+- Tests: 246 (was 233): `account_rules_test.dart` (4), `account_screen_test.dart` (7), two in `recommendations_widget_test.dart`. Checked on the emulator: no seal on finished books, the account page, and a real name change saved to the throwaway account on the live server and reverted. Not checked: a username change, a password change and the suggestions fix on a real phone. A 9 px overflow in the demo build's app-bar title at 360 px (`READING ROOM · DEMO`) was seen in a test and is not fixed.
+
 ## 2026-10-08: tapping a shelf book opens it like a real book
 
 - Amends D42. The Hero cover flight is replaced by `bookOpeningTransition` (new `lib/core/widgets/book_opening.dart`): the tapped book's bounds travel to `/book/:id` as a `BookOpening` (`extra`), the cover grows to full screen, swings open on its left edge and the details page appears (800 ms, 520 ms back). Other ways into a book keep the soft rise. The details page no longer wraps its cover in a Hero; `bookFlight` is removed from `book_cover.dart`. Reduced motion: no transition.

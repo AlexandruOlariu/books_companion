@@ -249,7 +249,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     children: [
                       for (final s in <BookStatus?>[null, ...BookStatus.values])
                         ChoiceChip(
-                          avatar: s == null ? null : StatusBadge(status: s),
+                          avatar: s == null || !hasStatusBadge(s)
+                              ? null
+                              : StatusBadge(status: s),
                           label: Text(s?.label ?? 'All'),
                           selected: status == s,
                           showCheckmark: false,

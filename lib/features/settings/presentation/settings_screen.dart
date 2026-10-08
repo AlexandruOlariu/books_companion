@@ -160,6 +160,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         if (!ref.watch(demoProvider)) ...[
           const SizedBox(height: 32),
+          Text('Your account', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
+          const Text('Change your name, your username, or your password.'),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/account'),
+            icon: const Icon(Icons.manage_accounts_outlined),
+            label: const Text('Edit my account'),
+          ),
+          const SizedBox(height: 32),
           Text(
             'Read with friends',
             style: Theme.of(context).textTheme.titleLarge,

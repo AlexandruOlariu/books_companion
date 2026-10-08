@@ -84,6 +84,20 @@ abstract class FriendsApi {
   Future<void> signOut();
   Future<void> deleteAccount({required String password});
 
+  /// Changes only the fields given. A taken username is refused.
+  Future<Account> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? username,
+  });
+
+  /// Needs the current password. Every other device is signed out; this one
+  /// stays signed in.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
+
   Future<Account> setPhone(String phone, {String? region});
   Future<Account> removePhone();
   Future<Account> setDiscoverable(bool value);

@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
-import '../../friends/presentation/friends_providers.dart';
 import '../../library/domain/models.dart';
 import '../domain/recommendations.dart';
 
@@ -60,41 +60,54 @@ class DismissedRecommendations extends Notifier<Set<String>> {
 /// How many friends' shelves are read for suggestions.
 const maxFriendShelves = 30;
 
+/// How long the friends' shelves are remembered, so moving between tabs does
+/// not ask the server again, but a new friend, or a friend who has just
+/// published, shows up soon after.
+const friendShelvesFreshFor = Duration(minutes: 1);
+
 /// The books friends finished, from their published shelves. Quiet by design:
 /// nobody signed in (or the demo), no network, or a failed call all give an
 /// empty list, because suggestions from the reader's own library still work.
 /// Reads only what Friends already shows; nothing about the reader is sent.
-final friendShelvesForSuggestionsProvider = FutureProvider<List<FriendShelf>>((
-  ref,
-) async {
-  if (ref.watch(demoProvider)) return const [];
-  if (!await ref.watch(signedInProvider.future)) return const [];
-  try {
-    // `read` after the first await: the sign-in above is what invalidates
-    // this provider, and each of these is its own cached provider.
-    final friends = (await ref.read(friendsProvider.future))
-        .take(maxFriendShelves)
-        .toList();
-    final shelves = await Future.wait([
-      for (final friend in friends)
-        ref
-            .read(friendShelfProvider(friend.id).future)
-            .then<FriendShelf?>(
-              (shelf) => shelf == null
-                  ? null
-                  : FriendShelf(
-                      name: friend.displayName,
-                      books: [
-                        for (final book in shelf.books)
-                          if (book.status == BookStatus.finished)
-                            SharedTitle(book.title, book.author),
-                      ],
-                    ),
-            )
-            .catchError((Object _) => null),
-    ]);
-    return [for (final shelf in shelves) ?shelf];
-  } on Object {
-    return const [];
-  }
-});
+///
+/// This asks the server itself instead of going through the cached Friends
+/// providers: those keep their answer for the whole session, so a reader who
+/// opened the Reading tab before having a friend (or before the friend had
+/// published) would see no suggestions until the app was restarted. An empty
+/// or failed answer is not remembered at all.
+final friendShelvesForSuggestionsProvider =
+    FutureProvider.autoDispose<List<FriendShelf>>((ref) async {
+      if (ref.watch(demoProvider)) return const [];
+      if (!await ref.watch(signedInProvider.future)) return const [];
+      final link = ref.keepAlive();
+      final timer = Timer(friendShelvesFreshFor, link.close);
+      ref.onDispose(timer.cancel);
+      List<FriendShelf> shelves = const [];
+      try {
+        final api = ref.read(friendsApiProvider);
+        final friends = (await api.friends()).take(maxFriendShelves).toList();
+        final loaded = await Future.wait([
+          for (final friend in friends)
+            api
+                .friendShelf(friend.id)
+                .then<FriendShelf?>(
+                  (shelf) => shelf == null
+                      ? null
+                      : FriendShelf(
+                          name: friend.displayName,
+                          books: [
+                            for (final book in shelf.books)
+                              if (book.status == BookStatus.finished)
+                                SharedTitle(book.title, book.author),
+                          ],
+                        ),
+                )
+                .catchError((Object _) => null),
+        ]);
+        shelves = [for (final shelf in loaded) ?shelf];
+      } on Object {
+        /* Suggestions from the reader's own library still work. */
+      }
+      if (shelves.isEmpty) link.close();
+      return shelves;
+    });

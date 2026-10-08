@@ -23,7 +23,11 @@ class RecommendationsSection extends ConsumerWidget {
     final shelves =
         ref.watch(friendShelvesForSuggestionsProvider).value ?? const [];
     final friends = friendRecommendations(data, shelves, dismissed: dismissed);
-    if (own.isEmpty && friends.isEmpty) return const SizedBox.shrink();
+    // An empty library has nothing to learn from, so the section stays away.
+    // With books but no suggestion it says why, rather than looking broken.
+    if (own.isEmpty && friends.isEmpty && data.books.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     List<Recommendation> of(Set<RecommendationKind> kinds) => [
       for (final r in own)
@@ -57,6 +61,7 @@ class RecommendationsSection extends ConsumerWidget {
             'Nothing is added unless you choose.',
             style: TextStyle(color: RoomColors.muted, height: 1.5),
           ),
+          if (own.isEmpty && friends.isEmpty) const _NothingYet(),
           for (final (label, items) in groups)
             if (items.isNotEmpty) ...[
               const SizedBox(height: 24),
@@ -68,6 +73,29 @@ class RecommendationsSection extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Said when there is nothing to suggest yet: what makes a suggestion appear,
+/// so a quiet section is not mistaken for a broken one.
+class _NothingYet extends StatelessWidget {
+  const _NothingYet();
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(top: 16),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: RoomColors.surface,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: RoomColors.line),
+    ),
+    child: const Text(
+      'Nothing to suggest yet. Ideas appear when you finish a book that is '
+      'part of a numbered series, when your Wishlist holds a book by an author '
+      'you have finished, or when a friend has shared a finished book you do '
+      'not have. Nothing is guessed, so a short shelf can stay quiet.',
+      style: TextStyle(height: 1.5),
+    ),
+  );
 }
 
 class _RecommendationCard extends ConsumerWidget {

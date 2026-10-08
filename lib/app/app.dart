@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/book_opening.dart';
 import '../features/book_details/presentation/book_details_screen.dart';
+import '../features/friends/presentation/account_screen.dart';
 import '../features/friends/presentation/friend_shelf_screen.dart';
 import '../features/friends/presentation/friends_screen.dart';
 import '../features/history/presentation/journal_screen.dart';
@@ -124,6 +125,7 @@ class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
           );
         },
       ),
+      GoRoute(path: '/account', builder: (_, _) => const AccountScreen()),
       GoRoute(
         path: '/book/:id',
         // From the shelf the book opens like a real one; from anywhere else

@@ -33,6 +33,49 @@ class FakeFriendsApi implements FriendsApi {
     discoverableByPhone: false,
   );
 
+  /// What the app sent for a profile change or a password change.
+  final profileChanges = <Map<String, String?>>[];
+  final passwordChanges = <({String current, String next})>[];
+  final takenUsernames = <String>{'taken'};
+
+  @override
+  Future<Account> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? username,
+  }) async {
+    if (username != null && takenUsernames.contains(username)) {
+      throw const FriendsException('That username is already taken.');
+    }
+    profileChanges.add({
+      'first': firstName,
+      'last': lastName,
+      'username': username,
+    });
+    final a = account!;
+    return account = Account(
+      id: a.id,
+      email: a.email,
+      username: username ?? a.username,
+      firstName: firstName ?? a.firstName,
+      lastName: lastName ?? a.lastName,
+      hasPhone: a.hasPhone,
+      discoverableByPhone: a.discoverableByPhone,
+    );
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    if (currentPassword != password) {
+      throw const FriendsException('Wrong password.');
+    }
+    passwordChanges.add((current: currentPassword, next: newPassword));
+    password = newPassword;
+  }
+
   @override
   Future<bool> signedIn() async => account != null;
 

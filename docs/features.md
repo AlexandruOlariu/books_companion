@@ -21,7 +21,7 @@ This is the behavioural specification of the working POC, written from the code.
 
 Three labelled bottom destinations: **Library**, **Reading**, **Journal**. A settings button (tune icon) sits in the top bar. A floating labelled **Add book** button is on Library. There is no onboarding beyond the account page: until someone is signed in the app opens on it, and nothing else (see Account and saving). The demo build skips it.
 
-Routes: `/library`, `/reading`, `/journal?year=YYYY` (inside the shell); `/add`, `/add?past=true`, and `/add?title=&author=&series=&number=` (any of them, used by suggestions to fill the form), `/book/:id`, `/edit/:id`, `/settings`, `/friends`, `/friends/:id?name=` (full screens). Online search is a pushed screen, not a route.
+Routes: `/library`, `/reading`, `/journal?year=YYYY` (inside the shell); `/add`, `/add?past=true`, and `/add?title=&author=&series=&number=` (any of them, used by suggestions to fill the form), `/book/:id`, `/edit/:id`, `/settings`, `/account`, `/friends`, `/friends/:id?name=` (full screens). Online search is a pushed screen, not a route.
 
 ## Library
 
@@ -32,7 +32,7 @@ Top to bottom: eyebrow, title **<First name>’s Library** (**My Library** when 
 - **Search:** see "Library search" below.
 - **Shelf / List switch:** the shelf is the signature view. The list (cover thumbnail, title, author, status) is used automatically at large text sizes (system text scale above about 1.44x) and can be chosen with the switch.
 - **Opening a book:** tapping a spine or cover opens that book's details page straight away (there is no preview panel any more, D42). The book tilts and slides out of the shelf, then opens like a real one: its cover grows from its place on the shelf until it fills the screen, swings open on its left edge, and the details page shows where the pages would be. Going back plays it in reverse and the book settles into its place. Reduced motion (platform setting) skips the tilt and the opening. Opening a book from anywhere else (the Reading tab, a suggestion, the large-text list) just raises the page softly.
-- **Status at a glance:** every book on the shelf carries a small round seal for its status: a green check for Finished, a gold open book for Reading, a heart in a white circle for Wishlist. The status filter chips show the same seals, so they work as the legend. (The shelf still shows books being read face-out with a bookmark ribbon.)
+- **Status at a glance:** books still to read or being read carry a small round seal: a gold open book for Reading, a heart in a white circle for Wishlist. A **Finished** book has no seal (finished is the quiet, default state; D42 amended). The Reading and Wishlist filter chips show the same seals, so they work as the legend. (The shelf still shows books being read face-out with a bookmark ribbon.)
 - **Shelf rendering:** see `design-system.md`. Rows of spines on wooden planks; books being read stand face-out with a bookmark ribbon; keepsakes sit among the books.
 - **Keepsakes note:** a line under the shelf, e.g. "Keepsakes: 3 of 7. Finish 2 more books for a tea mug." followed by "Earned by books you finish, never by streaks." Shown only when the whole shelf is visible (see Keepsakes).
 - **Empty states:** an empty library shows "A shelf of possibilities." with **Add your first book** and **Add books I've already read**. A filtered or searched empty shelf never says "first book" (see below). Actions have bottom clearance so the floating button never covers them.
@@ -107,11 +107,11 @@ An editorial heading ("In good company.") and one card per book with status Read
 
 ### What to read next
 
-At the end of the Reading tab, a section "What to read next" appears when there is something to suggest, and is absent otherwise. Suggestions never change the library: the only things they do are open a book already on the Wishlist, or open the add form with some fields filled in (the reader checks and saves it, or leaves). Each card says why it is shown, never has a cover from a friend, and has **Not interested** (hides it for good on this phone, with **Undo**). Finishing a book is never read as liking it: "liked" comes only from a rating of 4 or 5, a Favorite pin, or reading the book again.
+At the end of the Reading tab, a section "What to read next" appears once the library has any book. With something to suggest it shows the groups below; with nothing it says so: "Nothing to suggest yet. Ideas appear when you finish a book that is part of a numbered series, when your Wishlist holds a book by an author you have finished, or when a friend has shared a finished book you do not have. Nothing is guessed, so a short shelf can stay quiet." An empty library shows no section. Friends' finished books are read again each time the Reading tab is opened (remembered for a minute, and an empty or failed answer not at all), so a friend added or a shelf published after the tab was first seen shows up the next time. Suggestions never change the library: the only things they do are open a book already on the Wishlist, or open the add form with some fields filled in (the reader checks and saves it, or leaves). Each card says why it is shown, never has a cover from a friend, and has **Not interested** (hides it for good on this phone, with **Undo**). Finishing a book is never read as liking it: "liked" comes only from a rating of 4 or 5, a Favorite pin, or reading the book again.
 
 - **Continue a series:** for a series where numbered books are finished, the book after the highest finished number (not offered when the reader rated that last finished book 1 or 2 stars; "You rated book 3 5 of 5." is added to the reason when it was rated 4 or 5). If it is on the Wishlist: "You finished book 1 of S. It is on your Wishlist." with **Open book**. If it is not in the library: "S, book N", "You finished 2 books of S, up to book 2. Book 3 is not on your shelf." with **Add to Wishlist**, which opens the add form with the author, series, and number filled and the title empty (the title of a book not yet seen is not known). Nothing is offered if the next book is already being read. The length of a series is unknown, so the last volume of a finished series is offered too; **Not interested** removes it.
 - **From your Wishlist:** Wishlist books by an author the reader has finished: "On your Wishlist. You finished 2 books by X." Books rated 1 or 2 stars say nothing in an author's favour (an author with only such books is not suggested). Authors read more come first, and so do those with a book rated 4 or 5, read again, or pinned as a Favorite ("Includes one you rated highly, read again, or pinned as a favourite." is added to the reason).
-- **Your friends finished:** books friends finished that the reader does not have in any status: "Finished by Ana and Bob." (more than two: "Ana, Bob and 2 more"), adding "You finished N books by X." when that is true. **Add to Wishlist** opens the add form with title and author filled. Friends' shelves are read-only here: they never add books, dates, activity, or keepsakes. If the reader has no friends, is offline, or the server fails, this group is simply absent. Not shown in the demo.
+- **Your friends finished:** books friends finished that the reader does not have in any status: "Finished by Ana and Bob." (more than two: "Ana, Bob and 2 more"), adding "You finished N books by X." when that is true. **Add to Wishlist** opens the add form with title and author filled. Friends' shelves are read-only here: they never add books, dates, activity, or keepsakes. If the reader has no friends, is offline, or the server fails, this group is simply absent (and the section may say there is nothing to suggest yet). Not shown in the demo.
 - At most five suggestions per group.
 
 ### Sessions
@@ -182,11 +182,21 @@ Reached from Settings ("Read with friends" > **Friends and sharing**). Nothing i
 
 **A friend's shelf** (`/friends/:id`): read-only, grouped Reading now, Finished (most recent finish first, unknown last), Wishlist; each book shows its title, author, and finish dates exactly as shared ("Finished: March 2024", "Finished: 2019", "Finished: Date unknown"). A note says it is a snapshot and not part of the reader's own journal or keepsakes: it never adds books, dates, or activity to the reader's library. The menu has **Remove friend** and **Block**, each confirmed. A friend who has not shared shows "Nothing shared yet".
 
+## Your account (`/account`)
+
+Reached from Settings > **Edit my account** (hidden in the demo). Two forms on one page:
+
+- **Your details:** first name, last name and username, filled with the current values. **Save details** stays off until something changed and sends only what changed ("Details saved."). Names must not be empty (at most 60 characters); a username is 3 to 30 letters, digits, `_` or `.` and is stored in lower case (capitals typed are fine). A username someone else has is refused in words ("That username is already taken.") and nothing changes. A note says friends find the reader by username, so people who have the old one need the new one. The email is shown but cannot be changed here yet.
+- **Change password:** current password, new password, and the new one again. At least 10 characters, and the two new ones must match; a wrong current password is "Wrong password." The fields empty after a change. It signs out every other phone on the account, not this one ("Password changed. Other devices were signed out."); there is still no password reset.
+
+Signing out and deleting the account stay on the Friends page. Problems are shown under the form, never as a crash, and a lost session returns to the sign-in panel.
+
 ## Settings ("Your reading room")
 
 - States the privacy position: kept on the phone and saved to the account, no tracking, with the saving status and **Save now** (hidden in the demo, which says nothing is saved or sent).
 - **Export library:** saves a JSON backup including cover bytes and private pins to a location the reader picks.
 - **Restore a backup:** validates the file, asks "Replace this library?" showing the book count, then replaces the library atomically. A failed restore leaves the existing library unchanged. It replaces; it does not merge.
+- **Edit my account** (hidden in the demo): opens Your account, described above.
 - **Friends and sharing** (hidden in the demo): opens Friends, described below.
 - Version and open-source licences (DM Sans and Literata are listed).
 
@@ -204,4 +214,4 @@ Every tap target is at least 48 x 48. Books, spines, and keepsakes expose labels
 
 ## Not implemented
 
-Password reset, email or phone verification, changing the password or profile from the app, friend notifications, automatic or background sharing, cloud sync of the library, a web app, notifications, payments, ISBN camera scanning, sharing or showing ratings anywhere except the book's own page and suggestions, custom shelves, remembered start dates, editing a recorded finish date, multiple authors per book, dark theme, and process-death recovery beyond the drafts above. See `implementation-status.md` for what is unverified on real devices.
+Password reset, email or phone verification, changing the email address, friend notifications, automatic or background sharing, cloud sync of the library, a web app, notifications, payments, ISBN camera scanning, sharing or showing ratings anywhere except the book's own page and suggestions, custom shelves, remembered start dates, editing a recorded finish date, multiple authors per book, dark theme, and process-death recovery beyond the drafts above. See `implementation-status.md` for what is unverified on real devices.

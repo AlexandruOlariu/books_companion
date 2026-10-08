@@ -25,6 +25,10 @@ extension BookStatusLook on BookStatus {
   };
 }
 
+/// Reading and Wishlist books carry a seal; a finished book does not, so the
+/// shelf stays calm and only what still needs attention stands out.
+bool hasStatusBadge(BookStatus status) => status != BookStatus.finished;
+
 /// A small round seal for a book's status. Decorative: whoever needs the status
 /// in words gets it from the surrounding label.
 class StatusBadge extends StatelessWidget {

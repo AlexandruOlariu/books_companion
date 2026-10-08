@@ -70,9 +70,21 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('nothing to suggest shows no section', (tester) async {
+  testWidgets('an empty library shows no section', (tester) async {
     await openReading(tester);
     expect(find.text('What to read next'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('books but nothing to suggest says what makes an idea appear', (
+    tester,
+  ) async {
+    // No series, no Wishlist, no friends: a short shelf is quiet, not broken.
+    await finish('The Alchemist', 'Paulo Coelho');
+    await openReading(tester);
+    await reveal(tester, find.text('What to read next'));
+    expect(find.textContaining('Nothing to suggest yet'), findsOneWidget);
+    expect(find.textContaining('numbered series'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -181,6 +193,25 @@ void main() {
       );
       // Friends' shelves never touch the library.
       expect((await repo.load()).books, hasLength(1));
+    });
+
+    testWidgets('a friend made after the tab was first seen shows up later', (
+      tester,
+    ) async {
+      // Seen before there was any friend: nothing is remembered from that.
+      api.friendList = [];
+      await finish('Emma', 'Jane Austen');
+      await openReading(tester);
+      await reveal(tester, find.textContaining('Nothing to suggest yet'));
+      expect(find.text('Ulysses'), findsNothing);
+
+      api.friendList = [bob];
+      await tester.tap(find.text('Library').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Reading').last);
+      await tester.pumpAndSettle();
+      await reveal(tester, find.text('Ulysses'));
+      expect(find.text('Finished by Bob Ionescu.'), findsOneWidget);
     });
 
     testWidgets('a friends outage leaves the rest of the screen working', (

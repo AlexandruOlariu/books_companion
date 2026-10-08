@@ -325,6 +325,37 @@ class HttpFriendsApi implements FriendsApi, LibrarySyncApi {
   }
 
   @override
+  Future<Account> updateProfile({
+    String? firstName,
+    String? lastName,
+    String? username,
+  }) async => _account(
+    await _call(
+      'PATCH',
+      '/me',
+      body: {
+        'first_name': ?firstName?.trim(),
+        'last_name': ?lastName?.trim(),
+        'username': ?username?.trim(),
+      },
+    ),
+  );
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final json = await _call(
+      'POST',
+      '/me/password',
+      body: {'current_password': currentPassword, 'new_password': newPassword},
+    );
+    // The server ended every session; these are this device's new ones.
+    await _session.write(_tokens(json as Map));
+  }
+
+  @override
   Future<Account> setPhone(String phone, {String? region}) async => _account(
     await _call('PUT', '/me/phone', body: {'phone': phone, 'region': ?region}),
   );
