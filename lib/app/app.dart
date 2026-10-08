@@ -18,6 +18,8 @@ import '../features/settings/presentation/settings_screen.dart';
 import '../features/sync/presentation/conflict_dialog.dart';
 import '../features/sync/presentation/sync_controller.dart';
 import '../features/sync/presentation/welcome_screen.dart';
+import '../features/updates/update_controller.dart';
+import '../features/updates/update_widgets.dart';
 import 'providers.dart';
 
 class ReadingLibraryApp extends ConsumerStatefulWidget {
@@ -48,6 +50,13 @@ class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(
+          ref.read(updateControllerProvider.notifier).check(automatic: true),
+        );
+      }
+    });
     ref.listenManual(signedInProvider, (_, next) {
       _signInChanged.value++;
       if (next.value == true) {
@@ -74,6 +83,9 @@ class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      unawaited(
+        ref.read(updateControllerProvider.notifier).check(automatic: true),
+      );
       unawaited(ref.read(syncControllerProvider.notifier).sync());
     }
   }
@@ -261,7 +273,16 @@ class _RoomShell extends ConsumerWidget {
         const SizedBox(width: 12),
       ],
     ),
-    body: SafeArea(top: false, bottom: false, child: child),
+    body: SafeArea(
+      top: false,
+      bottom: false,
+      child: Column(
+        children: [
+          const UpdateNotice(),
+          Expanded(child: child),
+        ],
+      ),
+    ),
     bottomNavigationBar: NavigationBar(
       selectedIndex: path == '/reading'
           ? 1

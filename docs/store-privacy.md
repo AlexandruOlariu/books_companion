@@ -37,6 +37,10 @@ form and check any answer you are unsure of.
 - In-app account deletion exists (Friends > Delete my account) and erases all
   server-side data for the account immediately.
 
+## Android release updates
+
+The Android app automatically fetches a public GitHub release manifest on opening/resume (six-hour in-process throttle) and on a manual check. GitHub and its CDN receive the IP address and transport metadata, never an account token, library, notes, contacts or device identifier. Tapping Download update opens an HTTPS GitHub APK address in the browser. There is no new permission or analytics SDK. Reassess this external download feature before distributing through Google Play: this workflow is for the direct-APK channel, and a Play distribution should use its permitted update mechanism instead.
+
 ## Google Play — Data safety
 
 - Collects or shares data with the developer: **Yes, for every user (an account

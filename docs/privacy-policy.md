@@ -42,6 +42,10 @@ policy applies to that service. The app's online search sends nothing else, and
 does not send your library, notes, or any identifier. You can use the app fully
 without ever using online search.
 
+## Android version checks
+
+The Android app checks GitHub for a new signed version on opening and returning to the app (at most once per six hours per session), and when you tap Check for updates. GitHub and its download infrastructure receive your IP address and normal HTTPS request metadata. The request sends no account credentials, library, notes, contacts, or device identifier. Download update opens GitHub in your browser only when you tap it; installation needs your confirmation. GitHub's privacy policy applies to these requests. The demo and iOS app do not make these checks.
+
 ## Your account and your saved library
 
 When you sign in, the app saves your whole library to your account on the
@@ -119,8 +123,8 @@ verified, and there is currently no password reset; a forgotten password means
 the account cannot be recovered (you can create a new one).
 
 **Sharing with others.** The developer does not sell data or share it with
-advertisers or analytics providers. The server does not use third-party
-services. Open Library (above) receives only your book search text, as
+advertisers or analytics providers. The account server does not use third-party
+services. GitHub receives Android update requests as described above. Open Library (above) receives only your book search text, as
 described, normally from the developer's server rather than from your device,
 and, when a phone downloads a cover again, the cover address (and that phone's
 IP address).

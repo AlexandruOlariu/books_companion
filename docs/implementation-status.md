@@ -96,3 +96,9 @@ See the final verification notes below for execution results. Tests cover partia
 - 186 Flutter tests and 72 server tests pass; analyzer and format clean. The server migration `0002` ran in the deployed container (`libraries` exists with a cascade to `users`); `https://ai.duk-tech.com/books-api/me/library` answers 401 without a token.
 - On the emulator, against the deployed server: the v2 to v3 database upgrade kept 51 books; the account page came first; creating an account saved the library (revision 1, 51 books); after clearing app data and signing in, the conflict dialog showed 51 and 51, "Use my account" downloaded the library and fetched the one cover that had a source; adding a book reached the server within seconds (revision 2). The throwaway account was deleted from the database afterwards.
 - Data integrity added: a download is validated like a backup and applied in one transaction; a malformed account copy leaves the phone untouched; a cover address outside Open Library's cover host is rejected on save and restore; device cover paths are never sent.
+
+## Direct Android update work (2026-10-08)
+
+- Automatic foreground checks, optional notice, session dismissal, Settings check/download, actual installed Android version, and fixed APK/update metadata release packaging are implemented (D45).
+- 255 unit/widget tests pass, including nine focused update checks; Android debug and local release smoke APKs compile. The native installed-version channel returns the real emulator package metadata; update JSON generation matches the compiled release manifest. No browser download or installation was exercised by the mocked preview.
+- An isolated emulator preview uses simulated update metadata; it does not prove live release availability. The first new signed GitHub release must be published before the permanent download URL and metadata exist. A browser download and in-place same-key update preserving books on a real phone remain unverified.

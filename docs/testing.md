@@ -5,7 +5,7 @@
 ```sh
 ./tool/flutterw analyze
 dart format --output=none --set-exit-if-changed lib test integration_test
-./tool/flutterw test                                            # 246 unit and widget tests
+./tool/flutterw test                                            # 255 unit and widget tests
 ./tool/flutterw test integration_test/core_flows_test.dart -d <android-device>
 ./tool/flutterw build apk --debug
 ./tool/check_docs.sh                                            # docs cover the code
@@ -13,7 +13,7 @@ dart format --output=none --set-exit-if-changed lib test integration_test
 
 `dart format` is run with the SDK's `dart` (`flutter format` no longer exists). The integration test installs a test build, so it **wipes the app's data on the device**; re-run `lib/dev_seed.dart` afterwards if a seeded library is wanted.
 
-Latest results (2026-10-08): analyzer clean; format clean; 246 unit and widget tests pass. Server tests (72), the emulator integration test and the release builds were last run on 2026-10-07 and not repeated for these changes (neither touches the server or the integration flow; the integration flow itself was not re-run after the schema change); a debug APK built and ran on the emulator; the release APK and a release APK (debug-signed) build.
+Latest results (2026-10-08): 255 unit and widget tests pass, including nine Android update tests; debug APK compiles with the native update channel. Analyzer and final format checks are clean; release-script checks pass and the changed workflow YAML parses. Server tests (72), the emulator integration test and the release builds were last run on 2026-10-07 and not repeated for these changes (neither touches the server or the integration flow; the integration flow itself was not re-run after the schema change); a debug APK built and ran on the emulator; the release APK and a release APK (debug-signed) build.
 
 ## Test inventory
 
@@ -21,6 +21,7 @@ Latest results (2026-10-08): analyzer clean; format clean; 246 unit and widget t
 | --- | --- | --- |
 | `test/domain_test.dart` | 3 | partial dates keep only what the reader knows; retroactive completions never become activity; sessions need coherent page ranges or a known time |
 | `test/repository_test.dart` | 19 | page corrections, batch history and sessions stay independent; full export restores history, notes, and cover bytes on a clean database; malformed restore and foreign-key failure roll back everything; backup rejects path references; delete cascades; editing an edition cannot invalidate positions or pins; the database survives close and reopen at the current version; cover source: kept and exported, only Open Library cover addresses accepted (saving and restoring), covers still to fetch and attaching one, a backup from before cover sources restores; ratings: rate, change and clear, only 1 to 5 and only after a finish, kept across a reread and an edit, history and activity untouched, export and restore round trip, a backup without ratings restores unrated, a bad rating refuses the restore |
+| `test/app_updates_test.dart` | 9 | newer build only; reject foreign app/schema/version/download address; six-hour automatic throttle and manual bypass; offline retry preserving a known update; dismissal until a different release; explicit download and browser failure; overlapping checks and safe disposal; notice/Settings download actions; 360 px at 200% text |
 | `test/widget_test.dart` | 2 | update a page without creating activity; layouts at 360 px and 200% text |
 | `test/library_title_test.dart` | 2 | the Library heading: a first name (trimmed) makes it theirs, no name keeps "My Library" |
 | `test/search_test.dart` | 7 | diacritics, word order, ranking, a filter hiding a match (phone-sized screen), search miss, clear button |
@@ -101,3 +102,7 @@ Friends (2026-10-07), on the same emulator against the real server at `https://a
 ## CI results
 
 On 2026-10-06 both jobs of `.github/workflows/checks.yml` passed on GitHub Actions for commit `2f53858`: `analyze-and-test` (format, analyze, `flutter test`, `tool/check_docs.sh`, debug APK; 10 minutes) and `ios-build` (`flutter build ios --simulator --debug` on macOS; the UI showed 1 minute, which is short for an iOS build, so confirm in the job log that it really compiled). This also shows the docs check and the format check pass on a fresh checkout. The release workflow (`release.yml`) also passed: a manual run, then the `v0.1.0` tag, which published the first release.
+
+## Direct Android update validation (2026-10-08)
+
+255 unit/widget tests pass; the Android debug APK compiles. A local release APK smoke build (debug signing allowed) also compiles, and update metadata generation passes against its actual merged manifest; synthetic checks reject a mismatched build and a prerelease version. The emulator preview uses a fake update provider and no real account or library; the actual native installed-version channel was also exercised (0.1.1, build 1). It demonstrates the notice, dismissal and Settings UI, not a published update. Still to verify: the first signed GitHub workflow run with the fixed asset/manifest, live metadata fetch, browser APK download and a same-key update on a real phone preserving books. No live release was published during this work.

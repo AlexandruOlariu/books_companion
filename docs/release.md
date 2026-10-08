@@ -89,7 +89,7 @@ gh secret set ANDROID_KEY_ALIAS          # upload
 gh secret set ANDROID_KEY_PASSWORD
 ```
 
-**Build number.** Android only accepts an update with a higher `versionCode`, so CI uses the workflow run number as the build number and the release version as the version name, instead of the `+N` in `pubspec.yaml`. The app's own version line in Settings is read from nothing: it is typed text (`0.1.1`) and does not follow the release version.
+**Build number.** Android only accepts an update with a higher `versionCode`, so CI uses the workflow run number as the build number and the release version as the version name, instead of the `+N` in `pubspec.yaml`. On Android, Settings and licences read the installed package version through the native update channel, so they follow the release version.
 
 **Where the upload key is.** The key was generated on 2026-10-06 and lives in `~/.config/reading-library-signing/` on the development machine (`upload-keystore.jks` and `passwords.txt`, both mode 600, outside the repository), with copies in the four GitHub secrets. Back that folder up somewhere safe: GitHub secrets cannot be read back, and without the key no update can be signed to replace an installed build. Never commit it or paste its passwords anywhere. Its certificate is `CN=Reading Library, OU=Upload key`.
 
@@ -119,3 +119,13 @@ number for every upload.
 - Install the signed build on a real device, add a book, back up, restore on a
   second install, and confirm covers survive.
 - Complete the real-device checks in `implementation-status.md`.
+
+## Android downloads and updates without Google Play
+
+New releases use the fixed APK filename `reading-library.apk`. Share this permanent link after publishing the first release with that asset:
+
+https://github.com/AlexandruOlariu/books_companion/releases/latest/download/reading-library.apk
+
+The signed release pipeline also publishes `update.json` (schema 1: version, buildNumber, applicationId, downloadUrl), generated from the compiled Android manifest. Unsigned test releases stay pre-releases and do not contain update metadata; manually dispatched artifact-only builds do not contain it either. Older published releases have versioned APK filenames and no update metadata. Until the first new signed release is published, checking may report unavailable metadata. The workflow and live download links must be exercised after publishing; local checks are not evidence of a successful GitHub run.
+
+Install the first update-enabled release manually. Later versions offer a browser download from inside the app. Android still requires the reader to open the APK, allow installation from their browser/file app if asked, and confirm Update. Keep the application ID, signing key, and increasing build number to preserve an in-place update and its library. Verify on a phone that an older signed APK updates with its books intact. Automatic checks contact GitHub; see `privacy-policy.md`.

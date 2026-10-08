@@ -198,7 +198,8 @@ Signing out and deleting the account stay on the Friends page. Problems are show
 - **Restore a backup:** validates the file, asks "Replace this library?" showing the book count, then replaces the library atomically. A failed restore leaves the existing library unchanged. It replaces; it does not merge.
 - **Edit my account** (hidden in the demo): opens Your account, described above.
 - **Friends and sharing** (hidden in the demo): opens Friends, described below.
-- Version and open-source licences (DM Sans and Literata are listed).
+- **App updates** (Android, hidden in the demo): shows the installed version and **Check for updates**. A newer release offers **Download update**; this opens the browser. Open the downloaded APK and confirm **Update** in Android. The library stays in place when the same app/signing key is used. Offline checks show a retry message without blocking the library.
+- Installed Android version and open-source licences (DM Sans and Literata are listed).
 
 ## Drafts (recovery after the app is killed)
 
@@ -215,3 +216,7 @@ Every tap target is at least 48 x 48. Books, spines, and keepsakes expose labels
 ## Not implemented
 
 Password reset, email or phone verification, changing the email address, friend notifications, automatic or background sharing, cloud sync of the library, a web app, notifications, payments, ISBN camera scanning, sharing or showing ratings anywhere except the book's own page and suggestions, custom shelves, remembered start dates, editing a recorded finish date, multiple authors per book, dark theme, and process-death recovery beyond the drafts above. See `implementation-status.md` for what is unverified on real devices.
+
+## Android update notice
+
+On opening or returning to the Android app, a newer signed release shows "Version <version> is available." above the Library, Reading or Journal tab, with **Download update** and **Later**. Later hides that version for the current session; the download remains in Settings. Checks are limited to once per six hours in the current session, except manual checks. Downloads and installation require the reader's action; no notification is sent while the app is closed. Older installed apps need a one-time manual installation of the first release with this feature. Screenshot `screenshots/app-updates.png` is an isolated preview with simulated version information, not a live update.

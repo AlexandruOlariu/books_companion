@@ -217,7 +217,10 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/features/history/presentation/journal_months.dart` | Journal Months view: year rows, month tiles, cover fans |
 | `lib/features/history/presentation/journal_screen.dart` | Journal tab: summary, Months / Days / History views, session calendar |
 | `lib/features/book_details/presentation/book_details_screen.dart` | book details, pins, history, remove |
-| `lib/features/settings/presentation/settings_screen.dart` | export, restore, licences |
+| `lib/features/settings/presentation/settings_screen.dart` | export, restore, account links, Android updates and licences |
+| `lib/features/updates/update_service.dart` | installed Android package metadata, bounded HTTPS update manifest fetch, version/application/download validation, browser download channel |
+| `lib/features/updates/update_controller.dart` | `updateServiceProvider`, `updateControllerProvider`: foreground checks, six-hour session throttle, retry, dismissal and download state |
+| `lib/features/updates/update_widgets.dart` | optional shelf-shell update notice and Android Settings update controls |
 | `lib/features/sync/domain/sync_models.dart` | `LibrarySyncApi`, `LibraryRevision`, `RemoteLibrary`, `LibraryConflictException`, `SyncConflict`, `SyncOutcome`, `SyncResult` |
 | `lib/features/sync/data/sync_engine.dart` | `SyncEngine`: decides between saving, downloading and a conflict; saves and downloads the whole library; fetches missing online covers |
 | `lib/features/sync/data/syncing_repository.dart` | `SyncingRepository` (reports every write) and `LibraryChangeHook` |
@@ -238,3 +241,9 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/features/friends/presentation/person_row.dart` | a person with their actions |
 
 Other tooling: `tool/flutterw` (finds the Flutter SDK), `tool/set_bundle_id.sh`, `tool/check_docs.sh`, `tool/docs_stop_hook.sh`, `tool/release_version.sh`, `tool/ci_prepare_signing.sh`.
+
+## Android updates outside Google Play
+
+The app checks signed GitHub release metadata after the first frame and on resume, at most once per six hours within a process; a manual Settings check bypasses the throttle. The demo and other platforms do not check. `reading_library/updates` in Android `MainActivity` reads the actual installed version, build number and application ID and opens an HTTPS browser download on request. No new dependency or permission is required. The release manifest must describe the same application ID, a positive higher build number, and an exact APK address in this repository/tag; equal or older builds are never offered. A failed check keeps an already known update. Network reads have a 15-second total timeout and 64 KiB body limit; the app does not download or execute an APK itself. Android verifies the APK signature and asks the reader to install.
+
+`tool/create_update_manifest.py` checks the compiled release manifest against CI version/build values and generates `update.json` only for signed public releases. The workflow publishes a fixed `reading-library.apk` asset and SHA-256 checksum, allowing a permanent latest-download address. Private account and library data are never included in update requests.

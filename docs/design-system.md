@@ -89,3 +89,7 @@ Short, purposeful: a 180 ms pull-out when a book is opened, then the book openin
 - Test at phone size (360 x 800 logical), not the default 800 x 600 test surface. Several problems only appeared there: a status chip pushed off-screen by a horizontal scroll (now wrapping chips), a fixed 136 px preview panel overflowing by 6 px (since removed, D42), and empty-state buttons hidden behind the floating button.
 - The shelf starts below the header, so on a short phone the first row is partly below the fold; tests must scroll like a reader does.
 - Do not use `Eyebrow` text in tests literally: it uppercases its text.
+
+## Android update controls
+
+The optional notice sits below the shell app bar and above the scrollable destination. It uses the existing secondary-container colour, a padded column and wrapping text actions (Download update / Later) so 200% text does not overflow. Settings uses the existing outlined check button and filled download button, with status and installation instructions in normal body text. No dialog blocks opening the library. `screenshots/app-updates.png` shows simulated version data in an isolated emulator preview.

@@ -2,6 +2,13 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-08: direct Android update notices and downloads
+
+- D45: Android checks signed GitHub release metadata on opening/resume (six-hour session throttle), shows a nonblocking notice and offers Check for updates / Download update in Settings. Later hides the notice for that version during the session. Offline and browser errors are explained; no background download or silent installation.
+- CI now names the APK `reading-library.apk` and generates `update.json` from the compiled release manifest for signed public releases. Update validation compares installed build number and application ID and restricts APK addresses to this repository and exact release tag. Android Settings/licences read the installed version.
+- Privacy change: GitHub receives the IP and HTTPS metadata of version checks, never account/library data; policy and store notes updated. Existing users need a one-time manual install of the first release with the feature.
+- Nine focused tests added for version/URL validation, throttling, offline retry, dismissal, explicit download, overlapping checks/disposal and small-screen controls. Validation results are recorded in testing.md. Live publication and a real-phone update still need verification.
+
 ## 2026-10-08: account page, finished books lose their seal, suggestions that refresh
 
 - **Your account** (`/account`, Settings > **Edit my account**): the reader can change first name, last name and username, and the password. New `lib/features/friends/presentation/account_screen.dart` and `domain/account_rules.dart`; `FriendsApi` gained `updateProfile` (`PATCH /me`, only changed fields) and `changePassword` (`POST /me/password`, stores the fresh tokens). The server already supported both; only the client was missing (backend.md updated). Decision D43. Sign out and delete stay on the Friends page; the email cannot be changed yet.

@@ -10,6 +10,8 @@ import '../../../app/providers.dart';
 import '../../../core/storage/backup_service.dart';
 import '../../../core/widgets/common.dart';
 import '../../sync/presentation/sync_controller.dart';
+import '../../updates/update_controller.dart';
+import '../../updates/update_widgets.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -186,12 +188,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
         const SizedBox(height: 40),
-        const Text('Reading Library · 0.1.1'),
+        const UpdateSettings(),
+        Text(
+          'Reading Library${ref.watch(updateControllerProvider).installed == null ? '' : ' · ${ref.watch(updateControllerProvider).installed!.version}'}',
+        ),
         TextButton(
           onPressed: () => showLicensePage(
             context: context,
             applicationName: 'Reading Library',
-            applicationVersion: '0.1.1',
+            applicationVersion: ref
+                .read(updateControllerProvider)
+                .installed
+                ?.version,
           ),
           child: const Text('Open-source licenses'),
         ),
