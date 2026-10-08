@@ -2,6 +2,12 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-08: "What to read next" suggestions
+
+- Decision D40. The Reading tab ends with a **What to read next** section: the next book of a series being finished (offered from the Wishlist or as "Series, book N" to add), Wishlist books by authors already finished, and books friends finished that the reader lacks. Each says why; **Not interested** hides it on this phone (with Undo); nothing is added unless the reader saves the add form, which `/add` can now open prefilled (`title`, `author`, `series`, `number`; `BookPrefill`). No ratings, no catalogue, no AI.
+- New `lib/features/recommendations/` (rules in plain Dart, providers, section). No schema change, no new endpoint, field, or permission, so the privacy policy and store declarations are unchanged (friends' shelves are read through the existing calls).
+- 21 new tests (`recommendations_test.dart`, `recommendations_widget_test.dart`); 208 in all. Checked on the emulator in the demo build with a seeded series library: the cards render and **Add to Wishlist** opens the form prefilled. Not checked on a device: the friends group (needs a second account with a published shelf).
+
 ## 2026-10-07: every push to main publishes a release
 
 - Decision D39. `.github/workflows/release.yml` now also runs on pushes to `main`: after the usual checks it builds the APK and creates the next release (`tool/next_release_version.sh`: newest `vX.Y.Z` tag with the patch raised, or the `pubspec.yaml` version when newer; the first will be `v0.1.2`) on the tested commit. `[skip release]` in the head commit message skips it; a hand-pushed `v*` tag still releases under its own name. New `tool/test_release_scripts.sh` (7 checks, also run in `checks.yml`). Not run on GitHub yet: the workflow was validated as YAML and the version script by its tests, but only the first push to `main` will exercise it.

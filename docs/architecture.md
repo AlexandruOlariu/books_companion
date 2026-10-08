@@ -147,6 +147,16 @@ Separate from the library: nothing here reads or writes it except `sharedBooksFr
 - A friend's shelf is shown from `friendShelfProvider` and is never merged into `LibrarySnapshot`, so it cannot affect statistics, the Journal, or keepsakes.
 - The Settings entry is hidden in the demo build.
 
+## Suggestions (`lib/features/recommendations/`)
+
+The rules are plain Dart in `domain/recommendations.dart` and take a `LibrarySnapshot`; they read nothing else and write nothing.
+
+- `libraryRecommendations(library, dismissed:)`: groups books by series (`titleKey` of the series name). For a series with numbered finished books it looks at number `max finished + 1`: absent from the library gives `nextInSeries` (no title is known, so the card heading is "Series, book N"); a Wishlist book gives `nextOnWishlist`; anything else (being read) gives nothing. Then Wishlist books whose author the reader has finished (`wishlistByAuthor`), ordered by `finished + loved` for that author, where loved counts finished books read more than once or with a pin of type Favorite. Authors compare by surname (`authorKey`, first word). At most 5 per group (`maxPerGroup`).
+- `friendRecommendations(library, shelves, dismissed:)`: finished books on friends' shelves, minus any book already in the library in any status (`bookIdentity` = `titleKey|surname`, so case, diacritics, a leading article and "Surname, Given" do not matter). Ordered by number of distinct friends, then author affinity, then title; at most 5.
+- A suggestion's `key` (`series:<series key>:<n>`, `wish:<book id>`, `friend:<identity>`) is what "Not interested" remembers. `dismissedRecommendationsProvider` stores the keys as a JSON list (newest last, capped at 500) under the preferences key `dismissedRecommendations`: a device preference like the sort order, so never part of a backup, the account copy, or the server.
+- `friendShelvesForSuggestionsProvider` reads `friendsProvider` and, for up to 30 friends, `friendShelfProvider(id)` (the same cached calls the Friends screens use), keeping only finished books as title and author. It returns an empty list when the build is the demo, nobody is signed in, or any call fails, so the section degrades to library-only suggestions. No new endpoint, field, or request body: the reader sends nothing new.
+- The section (`RecommendationsSection`) sits at the end of the Reading tab. Cards use a generated cover for every suggestion (friends never share covers; an unseen volume has none) and either open the Wishlist book (`/book/:id`) or open `/add` prefilled. `/add` accepts optional query parameters `title`, `author`, `series` and `number`; they become a `BookPrefill`, which only fills the form's fields. A prefilled form does not use or overwrite the saved new-book draft.
+
 ## Drafts (`lib/core/storage/draft_store.dart`)
 
 `DraftStore` (`load`, `save`, `clear`) with `MemoryDraftStore` and `FileDraftStore` (debounced writes, atomic rename, 30-day expiry, damaged file ignored). `DraftBinding` ties one form to one key and clears the draft when all text is blank. Keys: `book:new` and `action:<userBookId>:<page|session|pin>`.
@@ -192,7 +202,10 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/features/book_search/data/open_library_lookup.dart` | Open Library client (direct fallback, covers) |
 | `lib/features/book_search/data/server_book_lookup.dart` | search through the Reading Library server, falling back to Open Library |
 | `lib/features/book_search/presentation/book_search_screen.dart` | online search screen |
-| `lib/features/reading/presentation/reading_screen.dart` | Reading tab |
+| `lib/features/reading/presentation/reading_screen.dart` | Reading tab (ends with the suggestions section) |
+| `lib/features/recommendations/domain/recommendations.dart` | the suggestion rules in plain Dart: `libraryRecommendations`, `friendRecommendations`, `bookIdentity`, `Recommendation`, `FriendShelf` |
+| `lib/features/recommendations/presentation/recommendations_providers.dart` | the dismissed-suggestions notifier (device preference) and the friends' shelves read for suggestions |
+| `lib/features/recommendations/presentation/recommendations_section.dart` | "What to read next" section and cards on the Reading tab |
 | `lib/features/reading/presentation/reading_actions.dart` | page, session, pin, finish sheets with drafts |
 | `lib/features/history/presentation/finish_date_field.dart` | finish-date precision picker |
 | `lib/features/history/domain/journal_buckets.dart` | groups finishes by month, year-only, year, and undated without inventing precision |

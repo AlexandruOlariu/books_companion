@@ -107,8 +107,21 @@ class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
       ),
       GoRoute(
         path: '/add',
-        builder: (_, state) =>
-            BookForm(historical: state.uri.queryParameters['past'] == 'true'),
+        builder: (_, state) {
+          final q = state.uri.queryParameters;
+          final hasPrefill = ['title', 'author', 'series'].any(q.containsKey);
+          return BookForm(
+            historical: q['past'] == 'true',
+            prefill: hasPrefill
+                ? BookPrefill(
+                    title: q['title'],
+                    author: q['author'],
+                    seriesName: q['series'],
+                    seriesNumber: int.tryParse(q['number'] ?? ''),
+                  )
+                : null,
+          );
+        },
       ),
       GoRoute(
         path: '/book/:id',

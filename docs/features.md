@@ -20,7 +20,7 @@ This is the behavioural specification of the working POC, written from the code.
 
 Three labelled bottom destinations: **Library**, **Reading**, **Journal**. A settings button (tune icon) sits in the top bar. A floating labelled **Add book** button is on Library. There is no onboarding beyond the account page: until someone is signed in the app opens on it, and nothing else (see Account and saving). The demo build skips it.
 
-Routes: `/library`, `/reading`, `/journal?year=YYYY` (inside the shell); `/add` and `/add?past=true`, `/book/:id`, `/edit/:id`, `/settings`, `/friends`, `/friends/:id?name=` (full screens). Online search is a pushed screen, not a route.
+Routes: `/library`, `/reading`, `/journal?year=YYYY` (inside the shell); `/add`, `/add?past=true`, and `/add?title=&author=&series=&number=` (any of them, used by suggestions to fill the form), `/book/:id`, `/edit/:id`, `/settings`, `/friends`, `/friends/:id?name=` (full screens). Online search is a pushed screen, not a route.
 
 ## Library
 
@@ -73,7 +73,7 @@ Fields: Title, Author (one text field, one author), **Series** and **Book number
 - **Edit** changes title, author, pages, language, and cover. It refuses a page count that would invalidate existing progress, sessions, or pins. It never changes status or history.
 - The selected cover is copied into app storage. The cover preview and an explanatory message show whenever a cover is present.
 - Validation messages appear inline and the typed input is kept. Dirty forms ask before discarding.
-- **Drafts:** unsaved new-book input survives the app being killed (see Drafts).
+- **Drafts:** unsaved new-book input survives the app being killed (see Drafts). A form opened from a suggestion starts from the suggestion and neither reads nor replaces that draft.
 
 ### Finish date ("When did you finish it?")
 
@@ -98,6 +98,15 @@ An editorial heading ("In good company.") and one card per book with status Read
 - **Update page** (primary): a sheet with a numeric field prefilled with the current page and the total when known. Saving shows "Position saved. Reading activity is unchanged." with **Undo**. A correction never counts as pages read.
 - **Add pin**, **Log session**, **Finish book**, **Book details** are shown for the expanded card (the first by default; others show **More reading actions**).
 - With nothing being read: "Your next chapter awaits." with **Add a book**.
+
+### What to read next
+
+At the end of the Reading tab, a section "What to read next" appears when there is something to suggest, and is absent otherwise. Suggestions never change the library: the only things they do are open a book already on the Wishlist, or open the add form with some fields filled in (the reader checks and saves it, or leaves). Each card says why it is shown, never has a cover from a friend, and has **Not interested** (hides it for good on this phone, with **Undo**). There are no ratings, so "liked" is never guessed from finishing alone.
+
+- **Continue a series:** for a series where numbered books are finished, the book after the highest finished number. If it is on the Wishlist: "You finished book 1 of S. It is on your Wishlist." with **Open book**. If it is not in the library: "S, book N", "You finished 2 books of S, up to book 2. Book 3 is not on your shelf." with **Add to Wishlist**, which opens the add form with the author, series, and number filled and the title empty (the title of a book not yet seen is not known). Nothing is offered if the next book is already being read. The length of a series is unknown, so the last volume of a finished series is offered too; **Not interested** removes it.
+- **From your Wishlist:** Wishlist books by an author the reader has finished: "On your Wishlist. You finished 2 books by X." Authors read more, or one the reader read again or pinned as a Favorite (added to the reason), come first.
+- **Your friends finished:** books friends finished that the reader does not have in any status: "Finished by Ana and Bob." (more than two: "Ana, Bob and 2 more"), adding "You finished N books by X." when that is true. **Add to Wishlist** opens the add form with title and author filled. Friends' shelves are read-only here: they never add books, dates, activity, or keepsakes. If the reader has no friends, is offline, or the server fails, this group is simply absent. Not shown in the demo.
+- At most five suggestions per group.
 
 ### Sessions
 

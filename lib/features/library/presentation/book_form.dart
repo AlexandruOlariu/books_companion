@@ -13,24 +13,45 @@ import '../../history/presentation/finish_date_field.dart';
 import '../domain/models.dart';
 import '../domain/search.dart';
 
+/// Details to start a new book from, for example a suggestion. They are only
+/// typed into the form; the reader still checks and saves it.
+class BookPrefill {
+  final String? title, author, seriesName;
+  final int? seriesNumber;
+  const BookPrefill({
+    this.title,
+    this.author,
+    this.seriesName,
+    this.seriesNumber,
+  });
+}
+
 class BookForm extends ConsumerStatefulWidget {
   final BookEntry? book;
   final bool historical;
-  const BookForm({super.key, this.book, this.historical = false});
+  final BookPrefill? prefill;
+  const BookForm({super.key, this.book, this.historical = false, this.prefill});
   @override
   ConsumerState<BookForm> createState() => _BookFormState();
 }
 
 class _BookFormState extends ConsumerState<BookForm> {
-  late final title = TextEditingController(text: widget.book?.title);
-  late final author = TextEditingController(text: widget.book?.author);
+  late final title = TextEditingController(
+    text: widget.book?.title ?? widget.prefill?.title,
+  );
+  late final author = TextEditingController(
+    text: widget.book?.author ?? widget.prefill?.author,
+  );
   late final pages = TextEditingController(
     text: widget.book?.pageCount?.toString(),
   );
   late final language = TextEditingController(text: widget.book?.language);
-  late final series = TextEditingController(text: widget.book?.seriesName);
+  late final series = TextEditingController(
+    text: widget.book?.seriesName ?? widget.prefill?.seriesName,
+  );
   late final seriesNumber = TextEditingController(
-    text: widget.book?.seriesNumber?.toString(),
+    text: (widget.book?.seriesNumber ?? widget.prefill?.seriesNumber)
+        ?.toString(),
   );
   late BookStatus status =
       widget.book?.status ??
@@ -51,7 +72,8 @@ class _BookFormState extends ConsumerState<BookForm> {
   @override
   void initState() {
     super.initState();
-    if (widget.book != null) return;
+    // A suggestion starts its own form; an older unsaved draft is left alone.
+    if (widget.book != null || widget.prefill != null) return;
     draft = DraftBinding(ref.read(draftStoreProvider), 'book:new');
     draft!.restore().then((fields) {
       if (fields == null || !mounted) return;

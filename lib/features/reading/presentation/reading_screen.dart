@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/book_cover.dart';
 import '../../../core/widgets/common.dart';
 import '../../library/domain/models.dart';
+import '../../recommendations/presentation/recommendations_section.dart';
 import 'reading_actions.dart';
 
 class ReadingScreen extends StatefulWidget {
@@ -152,6 +153,7 @@ class _ReadingScreenState extends State<ReadingScreen> {
               ),
             ),
           ),
+        RecommendationsSection(data: widget.data),
         if (books.isNotEmpty)
           const Padding(
             padding: EdgeInsets.all(16),
