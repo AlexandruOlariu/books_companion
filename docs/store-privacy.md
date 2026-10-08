@@ -93,3 +93,5 @@ The Android app automatically fetches a public GitHub release manifest on openin
 - `NSContactsUsageDescription` is set; the permission is requested only when the
   reader taps Find friends from contacts.
 - Photos: access is only through the system picker when choosing a cover.
+
+**App invitations:** Share app hands a fixed public Android download invitation to the native chooser only on a tap; the reader chooses the destination/recipient. Copy download link puts only the public URL on the clipboard. No library, token, username or contacts are read for this action; no new permission, dependency or network call is added.

@@ -102,3 +102,7 @@ See the final verification notes below for execution results. Tests cover partia
 - Automatic foreground checks, optional notice, session dismissal, Settings check/download, actual installed Android version, and fixed APK/update metadata release packaging are implemented (D45).
 - 255 unit/widget tests pass, including nine focused update checks; Android debug and local release smoke APKs compile. The native installed-version channel returns the real emulator package metadata; update JSON generation matches the compiled release manifest. No browser download or installation was exercised by the mocked preview.
 - An isolated emulator preview uses simulated update metadata; it does not prove live release availability. The first new signed GitHub release must be published before the permanent download URL and metadata exist. A browser download and in-place same-key update preserving books on a real phone remain unverified.
+
+## App invitations (2026-10-08)
+
+Share app opens the native chooser from the main toolbar and Settings; Copy download link copies the permanent latest Android APK URL. The native chooser and Settings were inspected on the emulator with sample data, without sending a message. Three focused widget tests cover payload/anchor, copy, and failure/retry; the full suite has 258 tests. The live download link returned HTTP 200 for v0.1.8. This change is local and still needs publication; iOS native sharing was not run.

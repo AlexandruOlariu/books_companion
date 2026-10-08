@@ -134,6 +134,11 @@ void main() {
       tester.view.devicePixelRatio = 3;
       addTearDown(tester.view.reset);
       await settings(demo: false);
+      await tester.scrollUntilVisible(
+        find.text('Friends and sharing'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Friends and sharing'), findsOneWidget);
       expect(find.textContaining('Find friends and share'), findsOneWidget);
       await settings(demo: true);

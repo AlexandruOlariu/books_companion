@@ -227,6 +227,7 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/features/sync/presentation/sync_controller.dart` | `SyncController`, `SyncState`, `SyncPhase`, `syncEngineProvider`, `syncControllerProvider`: when to save, retries, status |
 | `lib/features/sync/presentation/conflict_dialog.dart` | "Which library do you want to keep?" |
 | `lib/features/sync/presentation/welcome_screen.dart` | the full-screen account page shown while nobody is signed in |
+| `lib/features/sharing/presentation/share_app_button.dart` | native app-invitation share button, fixed public Android download message, clipboard and share-error fallback; anchors the chooser to its button |
 | `lib/features/sharing/data/share_image.dart` | on-device share images; `yearShelf` takes the `LibrarySort`, lists every book, and scales the canvas down above 8000 px tall |
 | `lib/features/friends/domain/friends_models.dart` | `Person`, `Account`, `SharedBook`, `SharedShelf`, `FriendsException`, the `FriendsApi` interface (including `updateProfile` and `changePassword`), and `sharedBooksFrom` (what is published) |
 | `lib/features/friends/domain/account_rules.dart` | plain-Dart checks for the account page: name, username (3 to 30 of `a-z0-9_.`, case ignored) and new password (10 to 128, repeated), mirroring the server |

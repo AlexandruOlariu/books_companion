@@ -15,6 +15,7 @@ import '../features/library/presentation/book_form.dart';
 import '../features/library/presentation/library_screen.dart';
 import '../features/reading/presentation/reading_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
+import '../features/sharing/presentation/share_app_button.dart';
 import '../features/sync/presentation/conflict_dialog.dart';
 import '../features/sync/presentation/sync_controller.dart';
 import '../features/sync/presentation/welcome_screen.dart';
@@ -254,17 +255,22 @@ class _RoomShell extends ConsumerWidget {
         children: [
           const Icon(Icons.auto_stories_outlined, size: 20),
           const SizedBox(width: 10),
-          Text(
-            ref.watch(demoProvider) ? 'READING ROOM · DEMO' : 'READING ROOM',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 2,
+          Expanded(
+            child: Text(
+              ref.watch(demoProvider) ? 'READING ROOM · DEMO' : 'READING ROOM',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2,
+              ),
             ),
           ),
         ],
       ),
       actions: [
+        const ShareAppButton(iconOnly: true),
         IconButton(
           tooltip: 'Settings and backups',
           onPressed: () => context.push('/settings'),

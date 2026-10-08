@@ -145,7 +145,9 @@ Cover, title, author, status chip, **your rating** (for a book finished at least
 
 ## Sharing
 
-On-device images only, through the native share sheet; nothing is uploaded and the reader chooses when. **Share book** (finished books): a 600 x 800 card with the cover, title, and author. **Share shelf** (Journal): a yearly grid of every finished book's cover, in the order chosen in the Library (Title, Author, or Recent; the saved choice), four per row. A very large shelf is drawn smaller rather than cut short. The share sheet is anchored to the button (needed on iPad).
+Through the native share sheet; the reader chooses the destination and recipient. App invitations contain a public link only; book/shelf sharing generates images on the device. **Share book** (finished books): a 600 x 800 card with the cover, title, and author. **Share shelf** (Journal): a yearly grid of every finished book's cover, in the order chosen in the Library (Title, Author, or Recent; the saved choice), four per row. A very large shelf is drawn smaller rather than cut short. The share sheet is anchored to the button (needed on iPad).
+
+**Share app:** the share icon beside Settings on Library, Reading and Journal opens the native chooser with a short invitation, the permanent latest Android APK link, and installation/update instructions. Settings also has **Invite a friend**, **Share app**, and **Copy download link** (copies just the URL and confirms "Download link copied."). No username, account token, library or file is attached. Cancelling is silent; if the chooser fails, a message offers **Copy link** and sharing can be retried. Sharing the invitation does not automatically add a friend in the app. The download is labelled Android, including when sent from another platform. Screenshots `screenshots/app-share-sheet.png` and `screenshots/settings-invite.png` use the in-memory demo; no recipient was chosen.
 
 ## Account and saving (`/welcome`, `/loading`)
 

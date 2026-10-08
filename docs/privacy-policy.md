@@ -129,6 +129,10 @@ described, normally from the developer's server rather than from your device,
 and, when a phone downloads a cover again, the cover address (and that phone's
 IP address).
 
+## Sharing the app
+
+Share app opens your device's share chooser with a fixed invitation and public Android download link. You choose the receiving app and recipient. No account information, library, contacts or private notes are included, and opening the chooser does not send a message automatically. Copy download link writes only that public URL to your device clipboard. When a recipient follows the link, GitHub receives the normal download request as described under Android version checks.
+
 ## Photos
 
 The app reads an image only when you choose a cover from your photo library, and

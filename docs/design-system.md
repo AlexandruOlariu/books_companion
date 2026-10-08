@@ -93,3 +93,7 @@ Short, purposeful: a 180 ms pull-out when a book is opened, then the book openin
 ## Android update controls
 
 The optional notice sits below the shell app bar and above the scrollable destination. It uses the existing secondary-container colour, a padded column and wrapping text actions (Download update / Later) so 200% text does not overflow. Settings uses the existing outlined check button and filled download button, with status and installation instructions in normal body text. No dialog blocks opening the library. `screenshots/app-updates.png` shows simulated version data in an isolated emulator preview.
+
+## App invitation controls
+
+A 48 px share icon sits beside Settings in the shell app bar with tooltip "Share app"; the title is a single ellipsized line so the two actions fit on small phones and at large text sizes. Settings puts Invite a friend after the account summary and before backup controls, using an outlined Share app button and a text Copy download link action. The native chooser is anchored to the originating button for iPad.

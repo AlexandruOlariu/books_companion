@@ -2,6 +2,12 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-08: share the app with a friend
+
+- D46: Share app in the main toolbar and Settings opens the native chooser with a public Android invitation and installation/update instructions. Copy download link copies the permanent latest-APK URL; a share failure offers the same copy fallback. No account/library data or APK file is attached.
+- The toolbar title truncates to fit both Share app and Settings at narrow widths/large text. Three focused widget tests cover the native payload/anchor, Settings share/copy and failure/retry.
+- The live permanent APK link returned HTTP 200 (latest release v0.1.8). This work changes the local app; it has not itself been published. See testing.md for validation.
+
 ## 2026-10-08: direct Android update notices and downloads
 
 - D45: Android checks signed GitHub release metadata on opening/resume (six-hour session throttle), shows a nonblocking notice and offers Check for updates / Download update in Settings. Later hides the notice for that version during the session. Offline and browser errors are explained; no background download or silent installation.

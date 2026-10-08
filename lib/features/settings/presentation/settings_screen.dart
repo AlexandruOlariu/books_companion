@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../app/providers.dart';
 import '../../../core/storage/backup_service.dart';
 import '../../../core/widgets/common.dart';
+import '../../sharing/presentation/share_app_button.dart';
 import '../../sync/presentation/sync_controller.dart';
 import '../../updates/update_controller.dart';
 import '../../updates/update_widgets.dart';
@@ -129,6 +130,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               : 'Your library, reading history, and private notes are kept on this phone and saved to your account, so they survive a lost or new phone. There is no tracking.',
         ),
         if (!ref.watch(demoProvider)) const _SaveStatus(),
+        const SizedBox(height: 32),
+        Text('Invite a friend', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 12),
+        const Text(
+          'Send a friend the Android download link so they can start their own reading room.',
+        ),
+        const SizedBox(height: 20),
+        const ShareAppButton(),
+        TextButton.icon(
+          onPressed: () => copyAppDownloadLink(context),
+          icon: const Icon(Icons.link),
+          label: const Text('Copy download link'),
+        ),
         const SizedBox(height: 32),
         Text(
           'Keep your collection safe',
