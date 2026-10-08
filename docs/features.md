@@ -25,13 +25,14 @@ Routes: `/library`, `/reading`, `/journal?year=YYYY` (inside the shell); `/add`,
 
 ## Library
 
-Top to bottom: eyebrow, title **My library**, a year selector with a **N books finished** button, status filters, a search field, the count, a **Sort** button and the **List/Shelf** switch, the shelf, and the floating button.
+Top to bottom: eyebrow, title **<First name>’s Library** (**My Library** when no account name is available), a year selector with a **N books finished** button, status filters (each with its status seal), a search field, the count, a **Sort** button and the **List/Shelf** switch, the shelf, and the floating button.
 
 - **Year selector:** `All time` or a completion year. It is shown only when the status filter is All or Finished (unfinished books have no completion year). Selecting a year narrows to books finished in it. The **N books finished** button opens the Journal for that period.
 - **Status filters:** All, Reading, Wishlist, Finished. They wrap onto a second line on narrow phones so none is ever off-screen. Choosing Reading or Wishlist clears the year.
 - **Search:** see "Library search" below.
 - **Shelf / List switch:** the shelf is the signature view. The list (cover thumbnail, title, author, status) is used automatically at large text sizes (system text scale above about 1.44x) and can be chosen with the switch.
-- **Selected-book panel:** above the shelf, tapping a spine or cover shows its cover, title, author, and status (or page progress for books being read, and pin count). Tapping the panel opens the book. It grows with its content rather than having a fixed height.
+- **Opening a book:** tapping a spine or cover opens that book's details page straight away (there is no preview panel any more, D42). The book tilts and slides out of the shelf, then opens like a real one: its cover grows from its place on the shelf until it fills the screen, swings open on its left edge, and the details page shows where the pages would be. Going back plays it in reverse and the book settles into its place. Reduced motion (platform setting) skips the tilt and the opening. Opening a book from anywhere else (the Reading tab, a suggestion, the large-text list) just raises the page softly.
+- **Status at a glance:** every book on the shelf carries a small round seal for its status: a green check for Finished, a gold open book for Reading, a heart in a white circle for Wishlist. The status filter chips show the same seals, so they work as the legend. (The shelf still shows books being read face-out with a bookmark ribbon.)
 - **Shelf rendering:** see `design-system.md`. Rows of spines on wooden planks; books being read stand face-out with a bookmark ribbon; keepsakes sit among the books.
 - **Keepsakes note:** a line under the shelf, e.g. "Keepsakes: 3 of 7. Finish 2 more books for a tea mug." followed by "Earned by books you finish, never by streaks." Shown only when the whole shelf is visible (see Keepsakes).
 - **Empty states:** an empty library shows "A shelf of possibilities." with **Add your first book** and **Add books I've already read**. A filtered or searched empty shelf never says "first book" (see below). Actions have bottom clearance so the floating button never covers them.
@@ -43,7 +44,7 @@ Top to bottom: eyebrow, title **My library**, a year selector with a **N books f
 - **Title (A-Z):** alphabetical, ignoring case, diacritics, and a leading "The", "A", or "An" ("The Hobbit" sits under H).
 - **Author (A-Z):** by the first author's surname (works for "Given Surname", "Surname, Given", and several authors joined by commas), then by title.
 - **Recently added:** newest first.
-- **Series stay together.** In both alphabetical sorts, books with the same series name sit side by side in number order, at the place of the series name; unnumbered books follow the numbered ones. A selected book shows "Series name, book N" in the panel and on its details page.
+- **Series stay together.** In both alphabetical sorts, books with the same series name sit side by side in number order, at the place of the series name; unnumbered books follow the numbered ones. The details page shows "Series name, book N".
 - The sort applies to the shelf and the list. A typed search ranks by relevance and uses the sort only to order equally good matches.
 
 ### Library search
@@ -199,7 +200,7 @@ Imported or downloaded covers live in the app documents directory (`covers/`). A
 
 ## Accessibility and input
 
-Every tap target is at least 48 x 48. Books, spines, and keepsakes expose labels to screen readers; decorative shadows and page edges are excluded. Layouts reflow at large text. Dirty-form dismissal asks first. Animations (a short lift when a book is selected) are disabled by the platform reduced-motion setting.
+Every tap target is at least 48 x 48. Books, spines, and keepsakes expose labels to screen readers; decorative shadows and page edges are excluded. Layouts reflow at large text. Dirty-form dismissal asks first. Animations (a book sliding out of the shelf when opened, and the page that follows) are disabled by the platform reduced-motion setting.
 
 ## Not implemented
 

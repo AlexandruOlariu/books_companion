@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_theme.dart';
+import '../core/widgets/book_opening.dart';
 import '../features/book_details/presentation/book_details_screen.dart';
 import '../features/friends/presentation/friend_shelf_screen.dart';
 import '../features/friends/presentation/friends_screen.dart';
@@ -125,8 +126,51 @@ class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
       ),
       GoRoute(
         path: '/book/:id',
-        builder: (_, state) =>
-            BookDetailsScreen(id: state.pathParameters['id']!),
+        // From the shelf the book opens like a real one; from anywhere else
+        // the page rises softly.
+        pageBuilder: (_, state) {
+          final id = state.pathParameters['id']!;
+          final extra = state.extra;
+          final opening = extra is BookOpening && extra.book.id == id
+              ? extra
+              : null;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            transitionDuration: Duration(
+              milliseconds: opening == null ? 420 : 800,
+            ),
+            reverseTransitionDuration: Duration(
+              milliseconds: opening == null ? 320 : 520,
+            ),
+            child: BookDetailsScreen(id: id),
+            transitionsBuilder: (context, animation, _, child) {
+              if (MediaQuery.disableAnimationsOf(context)) return child;
+              if (opening != null) {
+                return bookOpeningTransition(
+                  context,
+                  animation,
+                  opening,
+                  child,
+                );
+              }
+              final curved = CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+                reverseCurve: Curves.easeInCubic,
+              );
+              return FadeTransition(
+                opacity: curved,
+                child: SlideTransition(
+                  position: Tween(
+                    begin: const Offset(0, .04),
+                    end: Offset.zero,
+                  ).animate(curved),
+                  child: child,
+                ),
+              );
+            },
+          );
+        },
       ),
       GoRoute(
         path: '/edit/:id',

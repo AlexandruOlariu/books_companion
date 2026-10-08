@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/book_cover.dart';
+import '../../../core/widgets/book_opening.dart';
 import '../../../core/widgets/common.dart';
 import '../domain/models.dart';
 import 'keepsakes.dart';
@@ -83,14 +87,15 @@ List<ShelfRow> packShelves(
 
 class SliverShelf extends StatelessWidget {
   final List<BookEntry> books;
-  final String? selectedId;
-  final ValueChanged<String> onSelect;
+
+  /// Opens a book's details out of the spot it stands in. The shelf waits for
+  /// it to finish, so the book can slide back when the reader returns.
+  final Future<void> Function(BookOpening opening) onOpen;
   final List<Keepsake> keepsakes;
   const SliverShelf({
     super.key,
     required this.books,
-    required this.selectedId,
-    required this.onSelect,
+    required this.onOpen,
     this.keepsakes = const [],
   });
   @override
@@ -100,12 +105,8 @@ class SliverShelf extends StatelessWidget {
       final rows = packShelves(books, inner, keepsakes);
       return SliverList.builder(
         itemCount: rows.length,
-        itemBuilder: (context, i) => _ShelfRowView(
-          row: rows[i],
-          first: i == 0,
-          selectedId: selectedId,
-          onSelect: onSelect,
-        ),
+        itemBuilder: (context, i) =>
+            _ShelfRowView(row: rows[i], first: i == 0, onOpen: onOpen),
       );
     },
   );
@@ -114,21 +115,15 @@ class SliverShelf extends StatelessWidget {
 class _ShelfRowView extends StatelessWidget {
   final ShelfRow row;
   final bool first;
-  final String? selectedId;
-  final ValueChanged<String> onSelect;
+  final Future<void> Function(BookOpening opening) onOpen;
   const _ShelfRowView({
     required this.row,
     required this.first,
-    required this.selectedId,
-    required this.onSelect,
+    required this.onOpen,
   });
 
   Widget _slot(BuildContext context, ShelfSlot slot) => switch (slot) {
-    BookSlot() => _ShelfBook(
-      slot: slot,
-      selected: selectedId == slot.book.id,
-      onTap: () => onSelect(slot.book.id),
-    ),
+    BookSlot() => _ShelfBook(slot: slot, onOpen: onOpen),
     KeepsakeSlot() => _keepsake(context, slot),
   };
 
@@ -142,7 +137,7 @@ class _ShelfRowView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Room above the tallest book for a selected one to lift into.
+    // Room above the tallest book for a pulled-out one to rise into.
     final height = row.height + _plank + (first ? _beam : 0) + 22;
     return SizedBox(
       height: height,
@@ -227,36 +222,90 @@ class _Wood extends StatelessWidget {
   );
 }
 
-class _ShelfBook extends StatelessWidget {
+/// A book on the shelf. Tapping pulls it out a little, tilted, and then opens
+/// its details with the book opening (see `bookOpeningTransition`). It settles
+/// back when the reader returns.
+class _ShelfBook extends StatefulWidget {
   final BookSlot slot;
-  final bool selected;
-  final VoidCallback onTap;
-  const _ShelfBook({
-    required this.slot,
-    required this.selected,
-    required this.onTap,
-  });
+  final Future<void> Function(BookOpening opening) onOpen;
+  const _ShelfBook({required this.slot, required this.onOpen});
+  @override
+  State<_ShelfBook> createState() => _ShelfBookState();
+}
+
+class _ShelfBookState extends State<_ShelfBook> {
+  static const _pull = Duration(milliseconds: 180);
+  bool pulled = false;
+  final coverKey = GlobalKey();
+
+  Future<void> _open() async {
+    if (pulled) return;
+    final still = MediaQuery.disableAnimationsOf(context);
+    setState(() => pulled = true);
+    if (!still) await Future<void>.delayed(_pull);
+    if (!mounted) return;
+    // Where the cover is now, tilt and all, so the page opens from that spot.
+    final box = coverKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached) {
+      setState(() => pulled = false);
+      return;
+    }
+    final from = MatrixUtils.transformRect(
+      box.getTransformTo(null),
+      Offset.zero & box.size,
+    );
+    unawaited(HapticFeedback.lightImpact());
+    await widget.onOpen(
+      BookOpening(
+        book: widget.slot.book,
+        from: from,
+        fromSpine: !widget.slot.faceOut,
+      ),
+    );
+    if (mounted) setState(() => pulled = false);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final slot = widget.slot;
     final book = slot.book;
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
     return Semantics(
       button: true,
-      selected: selected,
       label:
-          '${book.title}, ${book.author}, ${book.status.label}. Select to preview.',
+          '${book.title}, ${book.author}, ${book.status.label}. Opens details.',
       child: InkWell(
-        onTap: onTap,
+        onTap: _open,
         borderRadius: BorderRadius.circular(4),
         child: AnimatedPadding(
-          duration: MediaQuery.disableAnimationsOf(context)
-              ? Duration.zero
-              : const Duration(milliseconds: 200),
-          padding: EdgeInsets.only(bottom: selected ? 10 : 0),
-          child: BookCover(
-            book: book,
-            width: slot.width,
-            height: slot.height,
-            spine: !slot.faceOut,
+          duration: duration,
+          curve: Curves.easeOutBack,
+          padding: EdgeInsets.only(bottom: pulled ? 8 : 0),
+          child: AnimatedRotation(
+            duration: duration,
+            curve: Curves.easeOutBack,
+            turns: pulled ? -.007 : 0,
+            alignment: Alignment.bottomCenter,
+            child: AnimatedScale(
+              duration: duration,
+              curve: Curves.easeOutBack,
+              scale: pulled ? 1.06 : 1,
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                key: coverKey,
+                width: slot.width,
+                height: slot.height,
+                child: BookCover(
+                  book: book,
+                  width: slot.width,
+                  height: slot.height,
+                  spine: !slot.faceOut,
+                  showStatus: true,
+                ),
+              ),
+            ),
           ),
         ),
       ),

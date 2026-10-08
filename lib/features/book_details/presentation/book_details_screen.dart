@@ -36,12 +36,7 @@ class BookDetailsScreen extends ConsumerWidget {
           return ListView(
             padding: screenPadding(context),
             children: [
-              Center(
-                child: Hero(
-                  tag: 'book-$id',
-                  child: BookCover(book: book, width: 144, height: 212),
-                ),
-              ),
+              Center(child: BookCover(book: book, width: 144, height: 212)),
               const SizedBox(height: 28),
               Text(
                 book.title,

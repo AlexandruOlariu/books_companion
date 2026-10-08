@@ -102,6 +102,7 @@ void main() {
         await tester.tap(button);
         await tester.pumpAndSettle();
         expect(find.text('Library'), findsWidgets);
+        expect(find.text('Ana’s Library'), findsOneWidget);
         expect(find.text('Your reading room, kept safe.'), findsNothing);
         expect(server.saves, hasLength(1));
         expect((server.stored!['books'] as List).single['title'], 'Dune');
@@ -115,6 +116,7 @@ void main() {
       await pump(tester);
       expect(find.text('Your reading room, kept safe.'), findsNothing);
       expect(find.text('Library'), findsWidgets);
+      expect(find.text('Ana’s Library'), findsOneWidget);
     });
   });
 

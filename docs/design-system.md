@@ -34,6 +34,7 @@ Base scale 4, 8, 12, 16, 24, 32. Page gutters 24 (shelf 16). Moderate radii (12 
   - Spine: a horizontal gradient for roundness, gilt bands near head and tail, the title rotated, never an untappable sliver.
   - Cover images are decoded at display size.
 - **Palette and hash:** `bookPalette` has 14 muted colours. `bookSeed(title)` is an FNV-1a hash so neighbouring titles differ; use different bit slices for different decisions (colour uses the whole value modulo 14, heights use shifted bits) because correlated moduli make colours cluster. A simple character sum was replaced because it made every spine purple, green, or brown.
+- **`StatusBadge`** and `BookStatusLook` (icon and colours per status), see "The bookshelf". `BookCover(showStatus: true)` adds the seal.
 - **`EmptyRoom`**, **`Eyebrow`**, **`FormSheet`** (modal sheet that keeps Save above the keyboard), **`notifyUser`** (snackbar), **`confirmDiscard`**, **`readableError`**.
 
 ## The bookshelf
@@ -42,7 +43,9 @@ The signature element of the Library tab. Inspired by a physical bookcase rather
 
 - **Structure:** each shelf row is a compartment: a back panel in `shelfBack` shaded darker at the top, wooden side frames, and a wooden plank with a light top edge. The first row has a top beam. Rows touch so they read as one bookcase.
 - **Books:** packed left to right by real width. A book is a spine 48 to 68 wide (grows with page count) and 138 to 177 tall, or face-out (96 wide, 144 to 157 tall) when it is being read (bookmark ribbon) or, for roughly one in seven others, by hash. Face-out books show the real cover.
-- **Selection:** tapping lifts the book 10 px (about 200 ms, instant under reduced motion) and shows it in the panel above; positions do not shuffle.
+- **Opening a book:** tapping pulls it out 8 px, tilts it about 2.5 degrees and scales it to 1.06 from its foot (180 ms, `easeOutBack`), then opens `/book/:id`; the book settles back when the reader returns. Positions never shuffle. Scale and tilt are `Transform`s, so they cannot change the row's layout; they stay inside the 22 px of room above the tallest book.
+- **Book opening (`bookOpeningTransition`, `lib/core/widgets/book_opening.dart`):** replaces the earlier Hero flight. The shelf measures the tilted book's bounds and passes them with the book to `/book/:id`. Over 800 ms (520 ms back) a copy of the cover grows from those bounds to the full screen (first half, `easeInOutCubic`), then swings open about its left edge (rotation of 0.56 π with slight perspective, from 45% of the time), fading out only at the end of the swing; the details page fades in underneath from 30% to 80%. A spine fades off a solid cover while it grows instead of stretching (never a half-transparent book); the cover sits in a transparent `Material` because it is drawn outside any `Scaffold` and unstyled text gets a yellow double underline; a face-out book is a plain cover. Any other way of opening a book fades and rises the page 4% over 420 ms (320 ms back). Reduced motion: no transition.
+- **Status seal (`StatusBadge`, `lib/core/widgets/status_badge.dart`):** a 20 px circle with a white ring and a soft shadow, at the foot of every shelf spine (centred, above the gilt band) and in the bottom-right corner of a face-out cover. Finished is a forest circle with a white check, Reading a gold (`#DBBA78`) circle with an open-book icon, Wishlist a cream circle with a terracotta heart outline. Spine titles keep 44 px at the foot clear for it. The filter chips use the same seal as their avatar.
 - **Rows are lazy** (a sliver list) so 500 books stay cheap. Row packing is O(n) per layout.
 - **Width:** the usable width is the screen width minus gutters and frame; the packing is recomputed for the layout width.
 
@@ -72,7 +75,7 @@ They stand on the plank among the books, evenly spread and never adjacent. Every
 
 ## Motion and feedback
 
-Short, purposeful: a 200 ms lift on selection. Saving is never blocked by animation. Reduced motion removes the lift. No looping animation. Confirmations are snackbars; page updates offer Undo; a snackbar is dismissed before the next sheet opens so it never covers Save.
+Short, purposeful: a 180 ms pull-out when a book is opened, then the book opening (the cover grows, swings open and the page appears), or a soft page rise from other screens. Saving is never blocked by animation. Reduced motion removes the pull-out and the transition; the page just appears. No looping animation. Confirmations are snackbars; page updates offer Undo; a snackbar is dismissed before the next sheet opens so it never covers Save.
 
 ## Accessibility rules the design depends on
 
@@ -83,6 +86,6 @@ Short, purposeful: a 200 ms lift on selection. Saving is never blocked by animat
 
 ## Layout lessons learned (worth keeping if the app is rebuilt)
 
-- Test at phone size (360 x 800 logical), not the default 800 x 600 test surface. Several problems only appeared there: a status chip pushed off-screen by a horizontal scroll (now wrapping chips), a fixed 136 px selection panel overflowing by 6 px, and empty-state buttons hidden behind the floating button.
+- Test at phone size (360 x 800 logical), not the default 800 x 600 test surface. Several problems only appeared there: a status chip pushed off-screen by a horizontal scroll (now wrapping chips), a fixed 136 px preview panel overflowing by 6 px (since removed, D42), and empty-state buttons hidden behind the floating button.
 - The shelf starts below the header, so on a short phone the first row is partly below the fold; tests must scroll like a reader does.
 - Do not use `Eyebrow` text in tests literally: it uppercases its text.

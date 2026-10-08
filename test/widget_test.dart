@@ -18,7 +18,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('My library'), findsOneWidget);
+    expect(find.text('My Library'), findsOneWidget);
     await tester.tap(find.text('Reading').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Update page').first);

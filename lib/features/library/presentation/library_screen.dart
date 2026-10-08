@@ -6,6 +6,9 @@ import '../../../app/providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/book_cover.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/status_badge.dart';
+import '../../friends/presentation/friends_providers.dart';
+import '../domain/library_title.dart';
 import '../domain/models.dart';
 import '../domain/search.dart';
 import '../domain/sorting.dart';
@@ -26,7 +29,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   bool list = false;
   String search = '';
   final searchField = TextEditingController();
-  String? selectedId;
 
   @override
   void initState() {
@@ -81,10 +83,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       ),
     );
     if (picked == null || !mounted) return;
-    setState(() {
-      sort = picked;
-      selectedId = null;
-    });
+    setState(() => sort = picked);
     await ref
         .read(preferencesProvider)
         .write(librarySortPreference, picked.name);
@@ -124,7 +123,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           onPressed: () => setState(() {
             status = null;
             year = null;
-            selectedId = null;
           }),
           child: Text('Show ${hidden == 1 ? 'it' : 'all $hidden'}'),
         ),
@@ -177,8 +175,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     // narrowing it to a few books.
     final showKeepsakes =
         status == null && year == null && search.trim().isEmpty;
-    final selected =
-        books.where((b) => b.id == selectedId).firstOrNull ?? books.firstOrNull;
     final accessibleList =
         list || MediaQuery.textScalerOf(context).scale(16) > 23;
     return Scaffold(
@@ -202,7 +198,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   const Eyebrow('Your own little reading room'),
                   const SizedBox(height: 12),
                   Text(
-                    'My library',
+                    libraryTitle(ref.watch(accountProvider).value?.firstName),
                     style: Theme.of(context).textTheme.headlineLarge,
                   ),
                   const SizedBox(height: 12),
@@ -253,13 +249,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     children: [
                       for (final s in <BookStatus?>[null, ...BookStatus.values])
                         ChoiceChip(
+                          avatar: s == null ? null : StatusBadge(status: s),
                           label: Text(s?.label ?? 'All'),
                           selected: status == s,
                           showCheckmark: false,
                           materialTapTargetSize: MaterialTapTargetSize.padded,
                           onSelected: (_) => setState(() {
                             status = s;
-                            selectedId = null;
                             if (s == BookStatus.reading ||
                                 s == BookStatus.wantToRead) {
                               year = null;
@@ -287,10 +283,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             ),
                       isDense: true,
                     ),
-                    onChanged: (v) => setState(() {
-                      search = v;
-                      selectedId = null;
-                    }),
+                    onChanged: (v) => setState(() => search = v),
                   ),
                   const SizedBox(height: 16),
                   Eyebrow(
@@ -320,29 +313,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       ),
                     ],
                   ),
-                  if (!accessibleList && books.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 16),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 136),
-                        child: selected == null
-                            ? const Center(
-                                child: Text(
-                                  'Select a spine. Rediscover a story.',
-                                  style: TextStyle(
-                                    fontFamily: 'Literata',
-                                    color: RoomColors.muted,
-                                  ),
-                                ),
-                              )
-                            : _Selection(
-                                book: selected,
-                                pins: data.pins
-                                    .where((p) => p.userBookId == selected.id)
-                                    .length,
-                              ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -372,8 +342,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverShelf(
                 books: books,
-                selectedId: selectedId,
-                onSelect: (id) => setState(() => selectedId = id),
+                onOpen: (opening) =>
+                    context.push('/book/${opening.book.id}', extra: opening),
                 // Keepsakes stay out of the way while the reader is searching.
                 keepsakes: showKeepsakes
                     ? Keepsake.earned(finishedCount)
@@ -388,70 +358,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       ),
     );
   }
-}
-
-class _Selection extends StatelessWidget {
-  final BookEntry book;
-  final int pins;
-  const _Selection({required this.book, required this.pins});
-  @override
-  Widget build(BuildContext context) => Material(
-    color: RoomColors.surface,
-    borderRadius: BorderRadius.circular(12),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => context.push('/book/${book.id}'),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Hero(
-              tag: 'book-${book.id}',
-              child: BookCover(book: book, width: 50, height: 74),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    book.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  Text(
-                    book.author,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: RoomColors.muted),
-                  ),
-                  if (book.seriesLabel != null)
-                    Text(
-                      book.seriesLabel!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: RoomColors.forest,
-                        fontSize: 13,
-                      ),
-                    ),
-                  const SizedBox(height: 6),
-                  Text(
-                    book.status == BookStatus.reading
-                        ? book.progressLabel
-                        : book.status.label,
-                  ),
-                  if (pins > 0) Text('$pins private pins'),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward, size: 20),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 class BookListTile extends StatelessWidget {

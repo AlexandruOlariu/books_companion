@@ -5,7 +5,7 @@
 ```sh
 ./tool/flutterw analyze
 dart format --output=none --set-exit-if-changed lib test integration_test
-./tool/flutterw test                                            # 230 unit and widget tests
+./tool/flutterw test                                            # 233 unit and widget tests
 ./tool/flutterw test integration_test/core_flows_test.dart -d <android-device>
 ./tool/flutterw build apk --debug
 ./tool/check_docs.sh                                            # docs cover the code
@@ -13,7 +13,7 @@ dart format --output=none --set-exit-if-changed lib test integration_test
 
 `dart format` is run with the SDK's `dart` (`flutter format` no longer exists). The integration test installs a test build, so it **wipes the app's data on the device**; re-run `lib/dev_seed.dart` afterwards if a seeded library is wanted.
 
-Latest results (2026-10-08): analyzer clean; format clean; 230 unit and widget tests pass. Server tests (72), the emulator integration test and the release builds were last run on 2026-10-07 and not repeated for these changes (neither touches the server or the integration flow; the integration flow itself was not re-run after the schema change); a debug APK built and ran on the emulator; the release APK and a release APK (debug-signed) build.
+Latest results (2026-10-08): analyzer clean; format clean; 233 unit and widget tests pass. Server tests (72), the emulator integration test and the release builds were last run on 2026-10-07 and not repeated for these changes (neither touches the server or the integration flow; the integration flow itself was not re-run after the schema change); a debug APK built and ran on the emulator; the release APK and a release APK (debug-signed) build.
 
 ## Test inventory
 
@@ -22,8 +22,9 @@ Latest results (2026-10-08): analyzer clean; format clean; 230 unit and widget t
 | `test/domain_test.dart` | 3 | partial dates keep only what the reader knows; retroactive completions never become activity; sessions need coherent page ranges or a known time |
 | `test/repository_test.dart` | 19 | page corrections, batch history and sessions stay independent; full export restores history, notes, and cover bytes on a clean database; malformed restore and foreign-key failure roll back everything; backup rejects path references; delete cascades; editing an edition cannot invalidate positions or pins; the database survives close and reopen at the current version; cover source: kept and exported, only Open Library cover addresses accepted (saving and restoring), covers still to fetch and attaching one, a backup from before cover sources restores; ratings: rate, change and clear, only 1 to 5 and only after a finish, kept across a reread and an edit, history and activity untouched, export and restore round trip, a backup without ratings restores unrated, a bad rating refuses the restore |
 | `test/widget_test.dart` | 2 | update a page without creating activity; layouts at 360 px and 200% text |
+| `test/library_title_test.dart` | 2 | the Library heading: a first name (trimmed) makes it theirs, no name keeps "My Library" |
 | `test/search_test.dart` | 7 | diacritics, word order, ranking, a filter hiding a match (phone-sized screen), search miss, clear button |
-| `test/shelf_test.dart` | 9 | keepsake thresholds, row packing (no overflow, order, tap sizes, evenly spread keepsakes), keepsake semantics, hidden under a filter |
+| `test/shelf_test.dart` | 10 | keepsake thresholds, row packing (no overflow, order, tap sizes, evenly spread keepsakes), keepsake semantics, hidden under a filter, a status seal on every shelf book, and a tap pulling the book out and then opening its details (and back) |
 | `test/lookup_test.dart` | 7 | Open Library parsing, ISBN query, misspelling fallback (stop words left out), failures, real-image check, against a local HTTP server |
 | `test/server_lookup_test.dart` | 3 | search through the server: only `{q}` in a POST body, approximate flag, cover URLs built on the device; fallback to Open Library on 502, 429, 404, a bad body, and an unreachable server |
 | `test/online_and_draft_widget_test.dart` | 6 | search to filled form, no-cover message, cover preview, offline fallback, book draft restore, pin draft restore and clear |
@@ -71,7 +72,7 @@ Run from `server/` with a Postgres test database (see `backend.md`); the suite b
 
 - Layout tests set `tester.view.physicalSize = Size(1080, 2400)` and `devicePixelRatio = 3` (360 x 800 logical) and scroll with `tester.drag`, because the default surface is wider and shorter than a phone.
 - `Eyebrow` upper-cases its text; match `'1 BOOK ON THE SHELF'`, not `'1 book...'`.
-- Books saved in the same millisecond are ordered by random UUID, so which book is first (and shown in the selected-book panel) varies per run. Never tap a status by plain text such as `find.text('Wishlist')`; tap the chip (`find.widgetWithText(ChoiceChip, ...)`). This caused one flaky test.
+- Books saved in the same millisecond are ordered by random UUID, so which book is first varies per run. Never tap a status by plain text such as `find.text('Wishlist')`; tap the chip (`find.widgetWithText(ChoiceChip, ...)`). This caused one flaky test.
 - Generated covers contain the title as text, so `find.text(title)` can match covers as well as list rows; scope searches with `find.descendant` or count rows.
 - To read the order of a list in a test, give it a tall screen (for example 4800 physical px high) and read `BookListTile.book` in order; a short screen builds only the first few rows.
 - Lazy lists (`ListView`, slivers) do not build off-screen children; scroll with `dragUntilVisible` and `ensureVisible` before asserting or tapping.

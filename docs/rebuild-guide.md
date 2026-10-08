@@ -54,7 +54,7 @@ Verify each screen in a running emulator, not only in widget tests.
 - Consider relative-width spines narrower than 48 px with a padded hit area, if the 48 px minimum makes spines too chunky.
 - Add a real iOS privacy manifest. The macOS CI job is what first showed the iOS simulator build compiling (2026-10-06); run it from the start of a rebuild.
 - Decide the Google Books question (D19) before launch if Romanian covers matter.
-- Make the shelf's first row visible without scrolling on short phones (shrink the selection panel or move it).
+- Make the shelf's first row visible without scrolling on short phones (the old preview panel is gone, D42; the filters and search above the shelf are what push it down).
 - Decide whether keepsakes should count only in-app finishes (D23).
 
 ## Reference commands

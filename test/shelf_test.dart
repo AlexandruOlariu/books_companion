@@ -175,12 +175,37 @@ void main() {
       );
       await tester.drag(find.byType(CustomScrollView), const Offset(0, 800));
       await tester.pumpAndSettle();
-      // The chip, not the selected-book panel, which can also say "Wishlist".
       await tester.tap(find.widgetWithText(ChoiceChip, 'Wishlist'));
       await tester.pumpAndSettle();
       await scrollDown(tester);
       expect(find.bySemanticsLabel(RegExp('Shelf keepsake')), findsNothing);
       expect(find.textContaining('Keepsakes:'), findsNothing);
+    });
+
+    testWidgets('every book shows its status, and a tap opens its details', (
+      tester,
+    ) async {
+      await open(tester, 1);
+      // The filter chips carry the same icons, so look on the shelf only.
+      Finder onShelf(IconData icon) => find.descendant(
+        of: find.byType(SliverShelf),
+        matching: find.byIcon(icon),
+      );
+      expect(onShelf(Icons.check), findsOneWidget);
+      expect(onShelf(Icons.favorite_border), findsOneWidget);
+      await tester.tap(
+        find.bySemanticsLabel(RegExp('Waiting, Someone, Wishlist')),
+      );
+      // The book is pulled out first, then the details page opens.
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Your book'), findsNothing);
+      await tester.pumpAndSettle();
+      expect(find.text('Your book'), findsOneWidget);
+      expect(find.text('Start reading'), findsOneWidget);
+      // Back on the shelf the book is back in its place.
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.text('Your book'), findsNothing);
     });
   });
 }

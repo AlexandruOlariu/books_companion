@@ -122,7 +122,7 @@ Envelope: `{ "format": "reading-library", "version": 1, "data": { "version": 1, 
 
 ## Shelf rendering (`lib/features/library/presentation/shelf.dart`)
 
-`packShelves(books, width, keepsakes)` returns rows of `BookSlot` and `KeepsakeSlot` no wider than the width, with keepsakes spaced evenly. `SliverShelf` builds rows lazily in a sliver list so a large library stays cheap. Slot sizes derive from `bookSeed(title)` (a stable FNV-1a hash) and page count. Details in `design-system.md`.
+`packShelves(books, width, keepsakes)` returns rows of `BookSlot` and `KeepsakeSlot` no wider than the width, with keepsakes spaced evenly. `SliverShelf` builds rows lazily in a sliver list so a large library stays cheap; its `onOpen` callback (the Library tab pushes `/book/:id`) is awaited, so the tapped book can settle back afterwards. The `/book/:id` route (`app.dart`) uses a `CustomTransitionPage`: when the shelf pushes it with a `BookOpening` as `extra` (the tapped book's id must match the route's), the page plays `bookOpeningTransition` (800 ms, 520 ms back); from anywhere else, or when the platform disables animations (no transition at all), it fades and rises 4% (420 ms, 320 ms back). Slot sizes derive from `bookSeed(title)` (a stable FNV-1a hash) and page count. Details in `design-system.md`.
 
 ## Account sync (`lib/features/sync/`)
 
@@ -189,15 +189,18 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/core/storage/preferences_store.dart` | small device-local settings (memory and file stores) |
 | `lib/core/storage/session_store.dart` | friends sign-in tokens: memory store and secure-storage store |
 | `lib/core/theme/app_theme.dart` | colour tokens and `roomTheme()` |
-| `lib/core/widgets/book_cover.dart` | cover, generated cover, spine, palette, `bookSeed` |
+| `lib/core/widgets/book_cover.dart` | cover, generated cover, spine, palette, `bookSeed`, optional status seal |
+| `lib/core/widgets/book_opening.dart` | `BookOpening` (the tapped book and its on-screen bounds, passed as the route's `extra`) and `bookOpeningTransition`, the cover-grows-then-swings-open page transition |
+| `lib/core/widgets/status_badge.dart` | `BookStatusLook` (icon and colours per status) and the round `StatusBadge` seal |
 | `lib/core/widgets/rating_stars.dart` | five-star rating control: 48 px stars, tap the chosen star again to clear, each star labelled "N of 5 stars" with its own tap action |
 | `lib/core/widgets/common.dart` | eyebrow, empty state, snackbar, discard dialog, form sheet, `screenPadding` (bottom inset for full-screen lists) |
+| `lib/features/library/domain/library_title.dart` | `libraryTitle`: the Library tab heading, "<First name>’s Library" or "My Library" |
 | `lib/features/library/domain/models.dart` | domain classes, `PartialDate`, validation, `LibraryRepository` interface |
 | `lib/features/library/domain/search.dart` | diacritic-insensitive multi-word search and ranking (title, author, series) |
 | `lib/features/library/domain/sorting.dart` | title and author sort keys, series grouping, `LibrarySort`, and `librarySortPreference` (the preferences key for the saved sort, also read by the Journal's Share shelf) |
 | `lib/features/library/data/local_library_repository.dart` | Drift implementation, export and restore validation |
-| `lib/features/library/presentation/library_screen.dart` | Library tab: filters, search, empty states, selection panel |
-| `lib/features/library/presentation/shelf.dart` | shelf packing, rows, planks, keepsake note |
+| `lib/features/library/presentation/library_screen.dart` | Library tab: filters (with status seals), search, empty states; a tapped book opens `/book/:id` |
+| `lib/features/library/presentation/shelf.dart` | shelf packing, rows, planks, keepsake note, the tilt-and-open animation of a shelf book |
 | `lib/features/library/presentation/keepsakes.dart` | keepsake enum, thresholds, painters |
 | `lib/features/library/presentation/book_form.dart` | add and edit form, search entry, drafts |
 | `lib/features/book_search/domain/book_lookup.dart` | lookup interface, suggestion, ISBN detection |

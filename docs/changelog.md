@@ -2,6 +2,21 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-08: tapping a shelf book opens it like a real book
+
+- Amends D42. The Hero cover flight is replaced by `bookOpeningTransition` (new `lib/core/widgets/book_opening.dart`): the tapped book's bounds travel to `/book/:id` as a `BookOpening` (`extra`), the cover grows to full screen, swings open on its left edge and the details page appears (800 ms, 520 ms back). Other ways into a book keep the soft rise. The details page no longer wraps its cover in a Hero; `bookFlight` is removed from `book_cover.dart`. Reduced motion: no transition.
+- `test/shelf_test.dart` covers the pull-out and the page opening. Checked on the emulator (Pixel_9_Pro, API 36) frame by frame, with animations slowed 8 times in a throwaway build (not committed): spine grows into the cover, fills the screen, swings open and shows the page. That run found two faults, both fixed: the title on the big cover had the yellow double underline of unstyled text (the cover is drawn above the page, outside any `Scaffold`, so it now sits in a transparent `Material`), and a spine fading into a cover left a ghostly half-transparent book (the cover now stays solid and the spine fades off it). The way back (closing) and reduced motion were not checked on the emulator.
+
+## 2026-10-08: the Library heading carries the reader's first name
+
+- The Library tab's title reads "Alex’s Library" (the signed-in account's first name) instead of "My library"; with no account or no first name it reads "My Library". New `lib/features/library/domain/library_title.dart`; the screen watches `accountProvider`. No new network call: the account is already loaded for Friends.
+- 2 new tests (233 total; `test/library_title_test.dart`, plus heading checks in `test/sync_widget_test.dart`). Not yet checked on the emulator.
+
+## 2026-10-08: status seals on the shelf, and a tap opens the book
+
+- Decision D42. Every book on the shelf has a small seal for its status (check, open book, heart), and the filter chips carry the same seals as a legend. Tapping a book now tilts it out of the shelf and opens its details page, with the cover flying across (Hero) and a soft page rise; the "selected-book panel" is removed. New `lib/core/widgets/status_badge.dart`; `BookCover` gained `showStatus` and `bookFlight`; `SliverShelf` takes `onOpen` instead of `selectedId`/`onSelect`; the `/book/:id` route has a custom transition.
+- New test in `test/shelf_test.dart` (231 tests, was 230). Checked on the emulator (Pixel_9_Pro, API 36): seals on spines and chips, the pull-out visible mid-animation, then the details page. The flight back and reduced motion were not checked on the emulator.
+
 ## 2026-10-08: bottom of pushed screens clear of the system navigation bar
 
 - Bug: on a phone whose Android draws the navigation bar over the app (edge-to-edge), the last item of a pushed screen was half hidden and could not be tapped (**Remove from library** on the book page). Pushed screens have no bottom bar, and a list with explicit padding gets no system inset. New `screenPadding` (`lib/core/widgets/common.dart`) adds the inset to the bottom padding; used by the book page, Settings, Friends, a friend's shelf, the account panel and the add/edit book form. The tabs already sit above their own bar; book search already used `SafeArea`.

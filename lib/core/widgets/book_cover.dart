@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../features/library/domain/models.dart';
+import 'status_badge.dart';
 
 const bookPalette = [
   Color(0xFF35554C),
@@ -35,12 +36,17 @@ class BookCover extends StatelessWidget {
   final BookEntry book;
   final double width, height;
   final bool spine;
+
+  /// Adds a [StatusBadge], so the shelf shows at a glance which books are being
+  /// read, wished for, or finished.
+  final bool showStatus;
   const BookCover({
     super.key,
     required this.book,
     this.width = 100,
     this.height = 148,
     this.spine = false,
+    this.showStatus = false,
   });
   @override
   Widget build(BuildContext context) {
@@ -152,7 +158,12 @@ class BookCover extends StatelessWidget {
                       RotatedBox(
                         quarterTurns: 3,
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(28, 6, 28, 6),
+                          padding: EdgeInsets.fromLTRB(
+                            showStatus ? 44 : 28,
+                            6,
+                            28,
+                            6,
+                          ),
                           child: Center(
                             child: Text(
                               book.title,
@@ -220,6 +231,13 @@ class BookCover extends StatelessWidget {
                     height: 25,
                     color: const Color(0xFFDBBA78),
                   ),
+                ),
+              if (showStatus)
+                Positioned(
+                  bottom: spine ? 22 : 8,
+                  left: spine ? (width - 20) / 2 : null,
+                  right: spine ? null : 8,
+                  child: StatusBadge(status: book.status),
                 ),
             ],
           ),
