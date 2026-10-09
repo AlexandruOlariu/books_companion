@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small icon for friend notifications: an open book, white on transparent
+     (Android tints it; a colour icon would show as a plain square). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,6.5C10.6,5.5 8.8,5 7,5C5.6,5 4.3,5.3 3,5.8V19.2C4.3,18.7 5.6,18.4 7,18.4C8.8,18.4 10.6,18.9 12,19.9C13.4,18.9 15.2,18.4 17,18.4C18.4,18.4 19.7,18.7 21,19.2V5.8C19.7,5.3 18.4,5 17,5C15.2,5 13.4,5.5 12,6.5Z" />
+</vector>

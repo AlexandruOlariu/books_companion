@@ -59,6 +59,12 @@ app.*.map.json
 
 # Backend (server/): secrets and local environments
 /server/.env
+/server/secrets/
 /server/.venv/
 __pycache__/
 .pytest_cache/
+
+# Firebase: the server's service-account key is a secret. The app's own
+# google-services.json is not, but it is per-owner configuration, kept out too.
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist

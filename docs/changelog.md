@@ -2,6 +2,13 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-09: friend notifications
+
+- D47: the server now pushes a notification (Firebase Cloud Messaging) when someone sends a friend request and when one is accepted. The text never contains a name or book. The app offers notifications once after sign-in, has a switch under Friends, asks the Android 13 permission only on turn-on, opens Friends when a notification is tapped, and turns them off on sign-out.
+- Server: table `device_tokens` (migration `0003`), `PUT /me/devices` and `POST /me/devices/remove`, `app/push.py` (off unless `FCM_CREDENTIALS_FILE`), 18 tests (90 in all). Client: `lib/features/push/`, `firebase_core` and `firebase_messaging`, a Google services Gradle plugin applied only when `google-services.json` exists, `POST_NOTIFICATIONS`, a `friends` notification channel, a CI step writing `google-services.json` from a secret. 23 new tests (281 in all).
+- **Privacy change:** Google (Firebase) now receives a push token and installation id from readers who turn this on, and the server stores tokens. Privacy policy, store answers and `release.md` (Firebase setup) updated.
+- Set up and run: Firebase project `books-fe0b7` with an Android app, the server redeployed with `FCM_CREDENTIALS_FILE`, and a real notification delivered to the emulator and opened (`testing.md`). The small icon is `ic_stat_notification`. Still open: the CI secret `GOOGLE_SERVICES_JSON`, two real phones, iOS.
+
 ## 2026-10-08: share the app with a friend
 
 - D46: Share app in the main toolbar and Settings opens the native chooser with a public Android invitation and installation/update instructions. Copy download link copies the permanent latest-APK URL; a share failure offers the same copy fallback. No account/library data or APK file is attached.

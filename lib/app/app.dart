@@ -13,6 +13,8 @@ import '../features/friends/presentation/friends_screen.dart';
 import '../features/history/presentation/journal_screen.dart';
 import '../features/library/presentation/book_form.dart';
 import '../features/library/presentation/library_screen.dart';
+import '../features/push/presentation/push_controller.dart';
+import '../features/push/presentation/push_prompts.dart';
 import '../features/reading/presentation/reading_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/sharing/presentation/share_app_button.dart';
@@ -62,8 +64,14 @@ class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
       _signInChanged.value++;
       if (next.value == true) {
         unawaited(ref.read(syncControllerProvider.notifier).sync());
+        unawaited(_startPush());
       }
     }, fireImmediately: true);
+    // Tapping a friend notification opens Friends, where the news is.
+    _notificationTaps = ref
+        .read(pushServiceProvider)
+        .opened
+        .listen((_) => unawaited(_openFriends()));
     // A library on the phone and one on the account that cannot be combined:
     // the reader decides which to keep, wherever they are in the app.
     ref.listenManual(syncControllerProvider, (previous, next) {
@@ -81,9 +89,40 @@ class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
     }, fireImmediately: true);
   }
 
+  StreamSubscription<void>? _notificationTaps;
+
+  Future<void> _openFriends() async {
+    await ref.read(signedInProvider.future);
+    if (mounted) router.push('/friends');
+  }
+
+  /// After signing in: point the server at this phone if notifications are on,
+  /// or offer them once if the reader has not decided.
+  Future<void> _startPush() async {
+    final push = ref.read(pushControllerProvider.notifier);
+    await push.refresh();
+    if (!mounted) return;
+    final state = ref.read(pushControllerProvider);
+    if (!state.available ||
+        state.choice != PushChoice.unset ||
+        !ref.read(accountRequiredProvider) ||
+        ref.read(demoProvider)) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _navigatorKey.currentState?.overlay?.context;
+      if (mounted && context != null && context.mounted) {
+        unawaited(offerPushNotifications(context, ref));
+      }
+    });
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      if (ref.read(signedInProvider).value == true) {
+        unawaited(ref.read(pushControllerProvider.notifier).refresh());
+      }
       unawaited(
         ref.read(updateControllerProvider.notifier).check(automatic: true),
       );
@@ -227,6 +266,7 @@ class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    unawaited(_notificationTaps?.cancel());
     router.dispose();
     _signInChanged.dispose();
     super.dispose();

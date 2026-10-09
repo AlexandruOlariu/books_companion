@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.routers import auth, books, friends, library, me, people, shelf
+from app.routers import auth, books, devices, friends, library, me, people, shelf
 
 # Served at https://ai.duk-tech.com/books-api/ ; nginx strips the prefix, so the
 # app itself lives at the root. The interactive docs are off in production.
@@ -14,6 +14,7 @@ app = FastAPI(
 
 app.include_router(auth.router)
 app.include_router(me.router)
+app.include_router(devices.router)
 app.include_router(people.router)
 app.include_router(friends.router)
 app.include_router(shelf.router)

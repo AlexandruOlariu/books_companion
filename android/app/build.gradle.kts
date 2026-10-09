@@ -75,6 +75,13 @@ flutter {
     source = "../.."
 }
 
+// Push notifications need the Firebase project's client configuration. It is
+// per-owner and git-ignored (docs/release.md); without it the app still builds,
+// and simply cannot receive notifications.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 gradle.taskGraph.whenReady {
     val releaseBuild = allTasks.any {
         it.project == project && it.name.contains("Release") && it.name.startsWith("assemble") ||

@@ -6,8 +6,11 @@ form and check any answer you are unsure of.
 
 ## Facts
 
-- No analytics, advertising, crash reporting, or third-party SDKs that transmit
-  data. An account is **required**: the app opens on the sign-in page, because
+- No analytics, advertising, or crash reporting. One third-party SDK transmits
+  data: Firebase Cloud Messaging (Google), used only for friend notifications the
+  reader turned on (Android; not initialised on iOS yet). It sends Google a
+  push token and a Firebase installation id; the messages carry no names or
+  book data. Analytics is not included. An account is **required**: the app opens on the sign-in page, because
   the library is saved to the account (decision D38). The demo build is the
   only part that works without one.
 - The library, notes, pins, and sessions are stored on the device and saved to
@@ -31,7 +34,11 @@ form and check any answer you are unsure of.
   reader adds a phone number, a keyed hash of it. Contact phone numbers are
   sent for matching when the reader taps Find friends from contacts and are not
   stored.
-- Permissions: `INTERNET`; `READ_CONTACTS` on Android and
+- Push: the reader's device push token is stored on the server for the account
+  until notifications are turned off, the reader signs out, or the account is
+  deleted.
+- Permissions: `INTERNET`; `POST_NOTIFICATIONS` (Android 13+, requested when the
+  reader turns friend notifications on); `READ_CONTACTS` on Android and
   `NSContactsUsageDescription` on iOS, requested only when the reader taps
   Find friends from contacts. Read-only; phone numbers only.
 - In-app account deletion exists (Friends > Delete my account) and erases all
@@ -69,6 +76,8 @@ The Android app automatically fetches a public GitHub release manifest on openin
 - Data encrypted in transit: **Yes** (HTTPS). Data is not encrypted end to end.
   Deletion request: in-app deletion (Friends > Delete my account, which also
   erases the saved library) plus a web page (see above).
+
+**Friend notifications:** declare **Device or other IDs** (the push token and Firebase installation id), collected, linked to the user, required for the optional notification feature, not used for advertising or analytics; shared with Google as a service provider (Firebase Cloud Messaging). Re-read the stores' wording on service providers. The merged manifest of a build with the real Firebase file adds only network-state, wake-lock, job-service, dump and Google's push receive/send permissions (no Analytics). Check Firebase's own data disclosure before submitting.
 
 ## Apple — App Privacy
 

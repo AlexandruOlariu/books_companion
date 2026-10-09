@@ -13,7 +13,8 @@ Public address: `https://ai.duk-tech.com/books-api/` (nginx strips the prefix; t
 | Passwords, tokens | argon2id (`argon2-cffi`); short-lived JWT access tokens (`PyJWT`, HS256); rotating opaque refresh tokens |
 | Phone numbers | `phonenumbers` to normalise, HMAC-SHA256 with a server-side pepper |
 | Runtime | Docker Compose (`server/docker-compose.yml`): `db` (no published port) and `api` (bound to `127.0.0.1:8300`) |
-| Tests | pytest against a real Postgres (72 tests) |
+| Push | Firebase Cloud Messaging HTTP v1 through `google-auth` and `requests`; off unless configured |
+| Tests | pytest against a real Postgres (90 tests) |
 
 Pinned versions are in `server/requirements.txt` and `server/requirements-dev.txt`.
 
@@ -33,12 +34,14 @@ Pinned versions are in `server/requirements.txt` and `server/requirements-dev.tx
 | `server/app/routers/auth.py` | register, login, refresh, logout |
 | `server/app/routers/me.py` | profile, phone, password, account deletion |
 | `server/app/routers/people.py` | username lookup, contact matching |
-| `server/app/routers/friends.py` | friend requests, friends, blocks |
+| `server/app/routers/friends.py` | friend requests, friends, blocks (and the push triggers) |
+| `server/app/routers/devices.py` | register and remove a phone's push token |
+| `server/app/push.py` | sending push notifications through Firebase Cloud Messaging |
 | `server/app/routers/shelf.py` | publish and read shelves |
 | `server/app/routers/library.py` | save and read the account's whole library |
 | `server/app/routers/books.py` | book search for the app (no sign-in) |
 | `server/app/booksearch.py` | Open Library search rules, stop words, in-memory cache |
-| `server/migrations/` | Alembic (`0001_initial_schema.py`, `0002_libraries.py`) |
+| `server/migrations/` | Alembic (`0001_initial_schema.py`, `0002_libraries.py`, `0003_device_tokens.py`) |
 | `server/tests/` | pytest suite |
 | `server/Dockerfile`, `server/docker-compose.yml`, `server/.env.example` | packaging and secrets template |
 | `server/deploy/nginx-books-api.conf`, `server/deploy/install-nginx.sh` | the nginx location and a one-time installer |
@@ -53,6 +56,7 @@ All ids are UUIDs. Foreign keys cascade on delete, so deleting a user removes ev
 - `blocks`: `(blocker_id, blocked_id)`.
 - `shelves`: one JSONB snapshot per user, replaced whole.
 - `libraries`: one row per user: `revision` (starts at 1, +1 per save), the whole library as JSONB `payload`, `updated_at`.
+- `device_tokens`: `(user_id, token, platform)`, `token` unique. One row per phone that agreed to notifications; a token belongs to one account, so registering it again as someone else moves it. At most 10 per account (the newest are kept).
 - `rate_events`: `(key, cost, created_at)` for rate limiting.
 
 ## API
@@ -78,6 +82,7 @@ Bearer access token on everything except `/auth/*`, `/books/search` and `/health
 | `PUT /me/shelf`, `GET /me/shelf`, `DELETE /me/shelf` | publish, read, unpublish your snapshot |
 | `GET /me/library/meta`, `GET /me/library`, `PUT /me/library` | the saved library. `meta` is `{revision, updated_at}`; `GET` adds `data`; both 404 when nothing is saved. `PUT {base_revision, data}` saves when `base_revision` equals the stored revision (0 when none) and returns the new `{revision, updated_at}`; otherwise 409 (header `X-Library-Revision`) and nothing is written. See "Saved libraries" |
 | `POST /books/search` | `{q}` (1 to 200 chars); `{approximate, books: [{title, author, page_count, first_publish_year, language, cover_id}]}`. No sign-in. 502 when Open Library cannot be reached. See "Book search" |
+| `PUT /me/devices`, `POST /me/devices/remove` | `{token, platform: android or ios}`: remember this phone for push (204; 60 per day); forget a token (204 whether or not it was known, and only the caller's own). See "Push notifications" |
 | `GET /friends/{id}/shelf` | a friend's snapshot; 404 for anyone who is not an accepted friend, and for friends who have not published |
 
 Another person is only ever shown as `{id, username, display_name}`. Email and phone are never returned to anyone but their owner, and the phone is never returned at all.
@@ -100,9 +105,19 @@ The app's online search goes through `POST /books/search` so the search rules ca
 - **The text is in the body, not the URL**, so nginx and uvicorn request logs show only `POST /books/search`. It is never written to the database (tested); answers are cached in memory for 6 hours (500 entries, per worker, lost on restart). Failures are not cached.
 - Only a cover id is returned; the app builds the cover address itself and downloads covers from Open Library directly.
 
+## Push notifications
+
+Off unless `FCM_CREDENTIALS_FILE` names a Firebase service-account key (in `.env`; the file lives in `server/secrets/`, git-ignored and mounted read-only at `/srv/secrets` by `docker-compose.yml`). Unset, every send is a no-op and the tests need no Google account.
+
+- **When:** a new friend request notifies the person asked (`friend_request`); accepting notifies the person who asked (`friend_accepted`), and so does asking someone who already asked you (that is an accept). Nothing is sent for a duplicate, a block, an unknown id, a decline, a cancel, or a removal.
+- **What:** a `notification` block (title and body only) plus `data.type`. The text never contains a name, username, or book (`push.MESSAGES`; a test checks no `@`), because it passes through Google and shows on a locked screen; the app looks the details up when opened. Android channel `friends`, high priority.
+- **How:** after the response (FastAPI `BackgroundTasks`), so a slow or failed send never delays or fails the request. `push.notify` catches everything, tries each of the account's tokens, and deletes a token Firebase reports as unregistered (HTTP 404). OAuth access tokens come from the service-account key via `google-auth` and are cached in memory.
+- **Setup:** see `release.md`, "Friend notifications (Firebase)".
+- **Not done:** iOS delivery (needs an Apple push key, an iOS Firebase app and `GoogleService-Info.plist`; the server side already accepts `platform: ios` tokens but sends them without any APNs-specific fields), collapsing several notifications, quiet hours, a per-kind setting.
+
 ## Security and privacy design
 
-- **Rate limits** (stored in Postgres, shared by every worker, counted even when the request fails): login 10 per email and 60 per address per 15 minutes; register 20 per address per hour; refresh 120 per address per 15 minutes; username lookup 60 per hour; contact matching 20 calls per hour and 3000 numbers per day; friend requests 50 per day; phone changes 10 per day; book search 120 per address per hour.
+- **Rate limits** (stored in Postgres, shared by every worker, counted even when the request fails): login 10 per email and 60 per address per 15 minutes; register 20 per address per hour; refresh 120 per address per 15 minutes; username lookup 60 per hour; contact matching 20 calls per hour and 3000 numbers per day; friend requests 50 per day; device registrations 60 per day; phone changes 10 per day; book search 120 per address per hour.
 - **Discovery is exact-match only.** There is no name, prefix or substring search, so the user base cannot be listed. Phone discovery is opt-in and off by default.
 - **Phone numbers** are normalised to E.164 and stored only as an HMAC with `PHONE_PEPPER`. Contact sync sends raw numbers over HTTPS (a hash made on the phone would be trivially reversible, because phone numbers are guessable); the server hashes them, compares, answers, and keeps nothing: the numbers are not written to any table (tested against the database), and the service does not log request bodies (uvicorn logs the request line only). A match only ever produces a name that can be asked to be friends; nothing is shared until the other person accepts.
 - **Blocks** hide both people from each other in lookup and contact matching, and a request to or from a blocked person answers 404, the same as an unknown id.
@@ -113,7 +128,7 @@ The app's online search goes through `POST /books/search` so the search rules ca
 
 - **Phone numbers are not verified.** There is no SMS check, so someone can claim a number that is not theirs. The damage is bounded (they appear under their own chosen name to people who have that number, and a request must still be accepted), but it is real. Verification needs an SMS provider, which is a cost and a new data processor.
 - **No email verification and no password reset.** Both need a mailer. A forgotten password currently means a lost account. Registration reports "email already taken", which reveals that an address has an account (rate limited).
-- **No push notifications**, so a friend request is only seen when the app asks.
+- **Push notifications are friend requests and acceptances only,** Android only in practice, and only when Firebase is configured (see "Push notifications"). Without it a request is seen when the app asks.
 - **Email cannot be changed.** Name, username and password can be changed in the app (`PATCH /me`, `POST /me/password`); the server has no endpoint for the email address.
 - **Logs contain searched usernames:** `GET /users/lookup?username=` puts the username in nginx's and uvicorn's request line. Request bodies are not logged.
 - **Access tokens cannot be revoked before they expire** (15 minutes); deleting an account or changing a password takes effect on the next refresh, although the deleted user's token stops working immediately because the user row is gone.

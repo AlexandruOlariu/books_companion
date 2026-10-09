@@ -42,7 +42,7 @@ def clean(schema):
         conn.execute(
             text(
                 "truncate users, refresh_tokens, friendships, blocks, shelves, libraries, "
-                "rate_events cascade"
+                "device_tokens, rate_events cascade"
             )
         )
 

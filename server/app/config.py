@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # phone hash, so treat it like a database password and back it up.
     phone_pepper: str = Field(min_length=32)
 
+    # Firebase service-account key for push notifications. Unset: push is off.
+    fcm_credentials_file: str | None = None
+
     access_token_minutes: int = 15
     refresh_token_days: int = 60
 

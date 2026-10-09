@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../../../app/providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../push/presentation/push_controller.dart';
+import '../../push/presentation/push_prompts.dart';
 import '../../sync/presentation/sync_controller.dart';
 import '../domain/friends_models.dart';
 import 'account_panel.dart';
@@ -89,6 +91,8 @@ class _SignedIn extends ConsumerWidget {
       const _SectionTitle('Your shelf for friends'),
       const _ShelfSharing(),
       const _Requests(),
+      const _SectionTitle('Notifications'),
+      const _Notifications(),
       const _SectionTitle('Friends'),
       const _FriendsList(),
       const _SectionTitle('Add a friend'),
@@ -100,6 +104,34 @@ class _SignedIn extends ConsumerWidget {
       _AccountActions(account: account),
     ],
   );
+}
+
+// --- notifications ---------------------------------------------------------
+
+class _Notifications extends ConsumerWidget {
+  const _Notifications();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final push = ref.watch(pushControllerProvider);
+    if (!push.available) {
+      return const _Muted('This build of the app cannot send notifications.');
+    }
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: const Text('Friend requests'),
+      subtitle: const Text(
+        'A notification when someone asks to be your friend or accepts. It never shows a name or a book. Google delivers it.',
+      ),
+      value: push.enabled,
+      onChanged: (on) async {
+        final controller = ref.read(pushControllerProvider.notifier);
+        if (!on) return controller.disable();
+        final problem = pushProblem(await controller.enable());
+        if (problem != null && context.mounted) notifyUser(context, problem);
+      },
+    );
+  }
 }
 
 // --- the published shelf -------------------------------------------------
@@ -437,6 +469,7 @@ class _AccountActions extends ConsumerWidget {
   const _AccountActions({required this.account});
 
   Future<void> signOut(BuildContext context, WidgetRef ref) async {
+    await ref.read(pushControllerProvider.notifier).signingOut();
     await ref.read(friendsApiProvider).signOut();
     resetFriendsData(ref);
   }
@@ -452,6 +485,8 @@ class _AccountActions extends ConsumerWidget {
       return true;
     });
     if (done == true) {
+      // The server already forgot this phone; this clears Firebase's side.
+      await ref.read(pushControllerProvider.notifier).signingOut();
       await ref.read(syncControllerProvider.notifier).accountDeleted();
       resetFriendsData(ref);
       if (context.mounted) notifyUser(context, 'Your account was deleted.');

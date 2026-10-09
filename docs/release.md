@@ -95,6 +95,18 @@ gh secret set ANDROID_KEY_PASSWORD
 
 **Status.** Verified on GitHub on 2026-10-06: a manual run built and signed an APK, then the tag `v0.1.0` published the first release (signed, not a pre-release; the downloaded APK matched `SHA256SUMS.txt` and carried the upload-key certificate; versionCode 2). *Update 2026-10-07:* the repository is **public**, so anyone can download from Releases (and read the code and docs); there is no private distribution through GitHub. To share a build privately, send the file directly. CI shows warnings that should be cleared at some point: Node 20 deprecation for the v4 actions and a deprecated `actions/setup-java@v4` (move to v5). It signs Android only; iOS releases need a Mac and signing (section 3). Only the Android job publishes; the iOS simulator job in `checks.yml` is separate.
 
+## 3a-2. Friend notifications (Firebase)
+
+Notifications need a Firebase project that only the owner can create (D47). Without it everything still builds; the app just says it cannot send notifications and the server sends nothing.
+
+1. In the Firebase console create a project. **Do not enable Google Analytics.** Add an Android app whose package name is the application ID (`app.readingroom.reading_library` while it is a placeholder; if the ID is changed later, add the new app and replace the file). Download `google-services.json`.
+2. Put that file at `android/app/google-services.json` (git-ignored) for local builds, and give CI the same text: `gh secret set GOOGLE_SERVICES_JSON < android/app/google-services.json`. The release workflow writes it before building. The file holds identifiers rather than passwords, but it is per-owner configuration, so it stays out of the repository.
+3. Project settings > Service accounts > Generate new private key. **This one is a secret.** Save it as `server/secrets/fcm.json` (mode 644 so the container user can read it; the folder is git-ignored), set `FCM_CREDENTIALS_FILE=/srv/secrets/fcm.json` in `server/.env`, then `docker compose up -d --build`. The new migration (`0003`) runs on start.
+4. Build and install a release APK, sign in on two phones, turn notifications on for one, and send it a friend request from the other.
+5. Changing the application ID or signing key does not break existing tokens, but the Firebase Android app must match the package name.
+
+For iOS later: add an iOS app in Firebase, upload an APNs key from the Apple developer account, add `GoogleService-Info.plist` to the Runner target, enable the Push Notifications capability, and let `FirebasePushService.create()` initialise on iOS (today it returns "unavailable" there on purpose, because initialising without the plist crashes).
+
 ## 3b. Sharing a build without committing it
 
 Built APKs and bundles are ignored by git (`dist/`, `*.apk`, `*.aab`); an APK is about 60 MB and GitHub warns above 50 MB. To share one, attach it to a GitHub Release (`gh release create v0.1.0 dist/reading-library-0.1.0.apk`) or send the file directly. A debug-signed APK installs for testing but cannot update a build signed with a different key.

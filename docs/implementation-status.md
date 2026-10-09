@@ -20,6 +20,8 @@ See the final verification notes below for execution results. Tests cover partia
 
 ## Remaining before release
 
+- **Friend notifications (D47):** working on the emulator against the real server (see `testing.md`). Still to do: set the CI secret `GOOGLE_SERVICES_JSON` (without it a CI APK cannot receive notifications), try it between two real phones, check the acceptance notification, and set up iOS. Check the stores' data declarations (`store-privacy.md`).
+
 - Run the generated iOS project on macOS/Xcode and test iOS image import, file export/restore, sharing, back navigation, and accessibility. Linux cannot compile an iOS application; the unsigned simulator build now passes in CI (see below), but no simulator or device run has happened.
 - Profile a 500-book library on a chosen midrange physical Android device. Emulator timings do not establish physical-device performance.
 - Have a new reader try adding a past book, updating a page, and finding a pin without coaching. The visual direction has implementation checks, not user usability validation.

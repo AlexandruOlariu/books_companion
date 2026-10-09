@@ -5,6 +5,8 @@
     <!-- Only for "Find friends from contacts": asked for when the reader taps it,
          read-only, phone numbers only. -->
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <!-- Android 13+: asked for only when the reader turns on friend notifications. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="Reading Library"
         android:allowBackup="false"
@@ -34,6 +36,13 @@
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <!-- Friend notifications use the "friends" channel created in MainActivity. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="friends" />
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

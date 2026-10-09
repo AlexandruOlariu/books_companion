@@ -286,3 +286,15 @@ class LibraryMeta(BaseModel):
 
 class LibraryOut(LibraryMeta):
     data: dict
+
+
+# --- push notifications -----------------------------------------------------
+
+
+class DeviceIn(Strict):
+    token: str = Field(min_length=20, max_length=4096)
+    platform: Literal["android", "ios"]
+
+
+class DeviceRemoveIn(Strict):
+    token: str = Field(min_length=1, max_length=4096)

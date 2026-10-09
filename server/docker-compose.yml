@@ -27,6 +27,11 @@ services:
       DATABASE_URL: postgresql+psycopg://books:${POSTGRES_PASSWORD}@db:5432/books
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       PHONE_PEPPER: ${PHONE_PEPPER:?set PHONE_PEPPER in .env}
+      # Optional push notifications; empty keeps them off (docs/backend.md).
+      FCM_CREDENTIALS_FILE: ${FCM_CREDENTIALS_FILE:-}
+    volumes:
+      # Holds the Firebase service-account key, if you use push. Git-ignored.
+      - ./secrets:/srv/secrets:ro
     ports:
       # Localhost only. nginx is the public entry point (deploy/nginx-books-api.conf).
       - "127.0.0.1:8300:8000"

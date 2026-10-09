@@ -17,6 +17,7 @@ Flutter 3.47.6 / Dart 3.13.5. Direct dependencies are pinned in `pubspec.yaml`; 
 | file_picker | 13.1.0 | saving and choosing backup files |
 | share_plus (+ cross_file) | 13.3.1 / 0.3.5+5 | native share sheet |
 | flutter_secure_storage | 11.2.0 | the account sign-in tokens (Keychain on iOS, an encrypted store on Android) |
+| firebase_core, firebase_messaging | 4.15.0 / 16.7.0 | friend notifications (Firebase Cloud Messaging, Android only for now; see "Push notifications"); on Android the Google services Gradle plugin 4.5.0 is applied only when `android/app/google-services.json` exists |
 | flutter_contacts | 2.6.0 | read-only phone numbers for "Find friends from contacts"; asked for only when the reader taps it |
 | intl | 0.20.3 | date formatting |
 | dev: drift_dev, build_runner, flutter_lints | 2.35.1, 2.16.1, 6.0.0 | codegen, migration tooling, lints |
@@ -42,7 +43,8 @@ presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepos
 2. Open `reading-library.sqlite` in the documents directory with `NativeDatabase.createInBackground`, build `LocalLibraryRepository`, and call `load()` once to fail early.
 3. Create `FileDraftStore` (`drafts.json` in the application-support directory) and flush it when the app goes inactive or paused.
 4. Fire-and-forget cover cleanup (`CoverStore.collectGarbage`), whose errors are ignored.
-5. `runApp` with provider overrides. If steps 2 to 4 throw, a plain "Your library could not be opened" screen with **Try again** is shown and nothing on disk is touched.
+5. Create the push service (`FirebasePushService.create()`; never fails, falls back to "unavailable").
+6. `runApp` with provider overrides. If steps 2 to 4 throw, a plain "Your library could not be opened" screen with **Try again** is shown and nothing on disk is touched.
 
 `lib/demo.dart` runs the same app on an in-memory sample library. `lib/dev_seed.dart` fills a development device's real library and then calls `main()`. Both are separate entry points and never part of a release.
 
@@ -59,6 +61,7 @@ presentation (widgets)  ->  LibraryRepository (interface)  ->  LocalLibraryRepos
 | `sessionStoreProvider` | in-memory by default; `SecureSessionStore` (secure storage) in `main.dart`; holds the friends sign-in tokens |
 | `serverApiProvider` | the one `HttpFriendsApi` on the session store, shared so friends calls and library saves use the same sign-in and a single token refresh |
 | `friendsApiProvider` | `FriendsApi`, by default `serverApiProvider`; tests override with a fake |
+| `pushApiProvider`, `pushServiceProvider` | `PushApi` (by default `serverApiProvider`) and `PushService` (`NoPushService` by default; `main.dart` overrides it with `FirebasePushService`); tests override both with fakes |
 | `librarySyncApiProvider` | `LibrarySyncApi`, by default `serverApiProvider`; tests override with a fake server |
 | `accountRequiredProvider` | false by default (tests, the demo); `main.dart` overrides it to true, which makes the router demand a signed-in account |
 | `signedInProvider` | `FutureProvider<bool>` from `FriendsApi.signedIn()`, answered from the device's session without the network; invalidated by `resetFriendsData` / `resetAccountData` on sign-in, sign-out, deletion and a lost session |
@@ -148,6 +151,16 @@ Separate from the library: nothing here reads or writes it except `sharedBooksFr
 - A friend's shelf is shown from `friendShelfProvider` and is never merged into `LibrarySnapshot`, so it cannot affect statistics, the Journal, or keepsakes.
 - The Settings entry is hidden in the demo build.
 
+## Push notifications (`lib/features/push/`)
+
+Friend requests and acceptances reach a closed app through the server (Firebase Cloud Messaging, sent by `server/app/push.py`; see `backend.md`). The client is small and everything about Firebase sits behind `PushService`, so the rest of the app and every test run without it.
+
+- `PushService` (domain) is the phone's side: `available`, `enable()` (asks permission, returns the token or null), `currentToken()`, `forget()`, and the streams `tokenRefreshed`, `received` (a notification arrived while the app was open) and `opened` (the reader tapped one, including the one that launched the app). `NoPushService` is the default and reports itself unavailable. `FirebasePushService.create()` (called in `main.dart`, never throws, 5 s limit) initialises Firebase only on Android; if `google-services.json` was missing at build time initialisation fails and it returns `NoPushService`. It is deliberately not initialised on iOS: without `GoogleService-Info.plist` the native call would crash the app.
+- `PushApi` (domain) is the server side, implemented by `HttpFriendsApi`: `PUT /me/devices` and `POST /me/devices/remove`.
+- `PushController` (`pushControllerProvider`) keeps the choice in the preferences key `push` (`on`, `off`, or empty for "not decided"). `enable()` asks permission, registers the token, then stores `on`; a refusal stores `off`; an unreachable server leaves it undecided. `disable()` removes the token from the server (best effort), deletes it from Firebase, stores `off`. `refresh()` (after sign-in and on resume) re-sends the token when the choice is `on`, because tokens rotate and a phone can change owner. `signingOut()` (Sign out, and after a successful account deletion) disables and stores "not decided" so the next account is asked. A notification received while the app is open invalidates `friendRequestsProvider` and `friendsProvider`.
+- `app.dart` offers notifications once after sign-in (`offerPushNotifications`, only when push is available and nothing was decided) and opens `/friends` when a notification is tapped. The Friends screen has the switch.
+- Android: the manifest requests `POST_NOTIFICATIONS` (asked at the moment the reader turns it on), `MainActivity` creates the notification channel `friends` ("Friend requests"), and the manifest names it as Firebase's default channel and `drawable/ic_stat_notification` (a white open book; a colour icon shows as a plain square) as its default small icon. The message text comes from the server's `notification` block, so Android shows it with no app code while the app is closed.
+
 ## Suggestions (`lib/features/recommendations/`)
 
 The rules are plain Dart in `domain/recommendations.dart` and take a `LibrarySnapshot`; they read nothing else and write nothing.
@@ -164,7 +177,7 @@ The rules are plain Dart in `domain/recommendations.dart` and take a `LibrarySna
 
 ## Platform configuration
 
-- **Android:** `applicationId` `app.readingroom.reading_library` (a placeholder; change with `tool/set_bundle_id.sh`), Kotlin namespace unchanged. `allowBackup=false`. The main manifest requests `INTERNET` (search, the account and library saving, and friends) and `READ_CONTACTS` (only used by "Find friends from contacts"; read-only; checked in the built APK's merged manifest). Nothing else is requested. Release signing reads `android/key.properties`; without it a release build fails unless `READING_LIBRARY_DEBUG_SIGNING=1` is set for a local, non-uploadable build.
+- **Android:** `applicationId` `app.readingroom.reading_library` (a placeholder; change with `tool/set_bundle_id.sh`), Kotlin namespace unchanged. `allowBackup=false`. The main manifest requests `INTERNET` (search, the account and library saving, and friends) and `READ_CONTACTS` (only used by "Find friends from contacts"; read-only; checked in the built APK's merged manifest) and `POST_NOTIFICATIONS` (friend notifications, asked for only when the reader turns them on). Nothing else is requested by the app itself; the Firebase libraries add `ACCESS_NETWORK_STATE`, `WAKE_LOCK`, `BIND_JOB_SERVICE`, `DUMP` and Google's own C2DM receive/send permission (read in the merged debug manifest of a build with the real Firebase file, 2026-10-09; no Analytics or advertising-id permission). `android/app/google-services.json` is the Firebase project's client configuration: git-ignored, written by CI from the `GOOGLE_SERVICES_JSON` secret, and optional (without it the app builds and cannot receive notifications). Release signing reads `android/key.properties`; without it a release build fails unless `READING_LIBRARY_DEBUG_SIGNING=1` is set for a local, non-uploadable build.
 - **iOS:** bundle id `app.readingroom.readingLibrary` (placeholder), `NSPhotoLibraryUsageDescription` and `NSContactsUsageDescription` set, automatic signing with no team committed. No app-level privacy manifest yet.
 - **CI** (`.github/workflows/checks.yml`): format check, analyze, tests, `tool/check_docs.sh`, debug APK on Linux; unsigned simulator build on macOS.
 - **Release CI** (`.github/workflows/release.yml`): on every push to `main` (unless the head commit says `[skip release]`) and on a `v*` tag, the same checks plus `tool/test_release_scripts.sh`, then a release APK published as a GitHub Release (signed when the `ANDROID_KEYSTORE_*` secrets exist, otherwise debug-signed and marked pre-release). Helpers: `tool/release_version.sh` (a pushed tag must match `pubspec.yaml`), `tool/next_release_version.sh` (the version of an automatic release), `tool/test_release_scripts.sh`, `tool/ci_prepare_signing.sh` (secrets to `android/key.properties`). See `release.md`.
@@ -229,6 +242,10 @@ Every Dart source file and what it owns. `tool/check_docs.sh` fails if a file un
 | `lib/features/sync/presentation/welcome_screen.dart` | the full-screen account page shown while nobody is signed in |
 | `lib/features/sharing/presentation/share_app_button.dart` | native app-invitation share button, fixed public Android download message, clipboard and share-error fallback; anchors the chooser to its button |
 | `lib/features/sharing/data/share_image.dart` | on-device share images; `yearShelf` takes the `LibrarySort`, lists every book, and scales the canvas down above 8000 px tall |
+| `lib/features/push/domain/push_models.dart` | `PushApi` (register and remove a device token), `PushService` (permission, token, incoming and tapped notifications) and `NoPushService` |
+| `lib/features/push/data/firebase_push_service.dart` | `FirebasePushService`: Firebase Cloud Messaging on Android; unavailable elsewhere or without `google-services.json` |
+| `lib/features/push/presentation/push_controller.dart` | `PushController`, `PushState`, `PushChoice`, `PushResult`, `pushServiceProvider`, `pushApiProvider`: the stored choice, registering the token, signing out |
+| `lib/features/push/presentation/push_prompts.dart` | the one-time "Know when a friend writes?" offer and the messages for a blocked or failed turn-on |
 | `lib/features/friends/domain/friends_models.dart` | `Person`, `Account`, `SharedBook`, `SharedShelf`, `FriendsException`, the `FriendsApi` interface (including `updateProfile` and `changePassword`), and `sharedBooksFrom` (what is published) |
 | `lib/features/friends/domain/account_rules.dart` | plain-Dart checks for the account page: name, username (3 to 30 of `a-z0-9_.`, case ignored) and new password (10 to 128, repeated), mirroring the server |
 | `lib/features/friends/presentation/account_screen.dart` | `/account`: edit first name, last name and username (only changed fields are sent), and change the password |

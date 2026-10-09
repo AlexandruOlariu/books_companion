@@ -1,11 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app import ratelimit
+from app import push, ratelimit
 from app.db import get_session
 from app.deps import blocked_either_way, current_user, get_friendship, pair
 from app.models import Block, Friendship, User
@@ -70,6 +70,7 @@ def list_requests(me: User = Depends(current_user), session: Session = Depends(g
 @router.post("/friends/requests", response_model=PersonOut, status_code=201)
 def send_request(
     body: FriendRequestIn,
+    background: BackgroundTasks,
     me: User = Depends(current_user),
     session: Session = Depends(get_session),
 ):
@@ -88,6 +89,7 @@ def send_request(
         # They already asked you: asking back is accepting.
         existing.status = "accepted"
         session.commit()
+        background.add_task(push.notify, target.id, "friend_accepted")
         return person(target)
     low, high = pair(me.id, target.id)
     session.add(Friendship(user_a=low, user_b=high, requested_by=me.id))
@@ -96,12 +98,14 @@ def send_request(
     except IntegrityError:
         session.rollback()
         raise HTTPException(status_code=409, detail="Request already sent.")
+    background.add_task(push.notify, target.id, "friend_request")
     return person(target)
 
 
 @router.post("/friends/requests/{user_id}/accept", response_model=PersonOut)
 def accept_request(
     user_id: uuid.UUID,
+    background: BackgroundTasks,
     me: User = Depends(current_user),
     session: Session = Depends(get_session),
 ):
@@ -114,6 +118,7 @@ def accept_request(
         raise NOT_FOUND
     friendship.status = "accepted"
     session.commit()
+    background.add_task(push.notify, user_id, "friend_accepted")
     return person(session.get(User, user_id))
 
 

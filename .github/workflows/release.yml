@@ -79,6 +79,17 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./tool/ci_prepare_signing.sh >> "$GITHUB_OUTPUT"
 
+      # Push notifications: the Firebase client configuration is per-owner and
+      # git-ignored (docs/release.md). Without the secret the APK still builds
+      # but cannot receive notifications.
+      - name: Firebase configuration
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          fi
+
       # The build number must rise with every release for Android to accept an
       # update, so it comes from the run number rather than from pubspec.yaml.
       - name: Build APK

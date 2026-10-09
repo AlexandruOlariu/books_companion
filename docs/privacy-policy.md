@@ -73,6 +73,10 @@ the library on your phone, which is saved again if you create a new account.
 Two phones on one account: if both have changes, the app asks you which library
 to keep; it never merges them, and the one you do not keep is replaced.
 
+## Friend notifications
+
+Only if you turn them on (the app asks once after you sign in, and the switch is under Friends), the app can notify you when someone sends you a friend request or accepts yours, even when the app is closed. To do this the app asks your phone's notification service for an address for this installation and sends that address to the developer's server, which stores it with your account until you turn notifications off, sign out, or delete your account. When something happens, the server sends a message to that address through Google's Firebase Cloud Messaging. The message only says that a friend request arrived or was accepted; it never contains a name, a username, or a book. Google therefore receives the notification address, the time, and that a message was sent, and also an installation identifier created by Firebase on your phone; Google's privacy policy applies to that service. On Android 13 and newer, the system asks your permission when you turn notifications on. If you never turn them on, none of this happens. The iOS app does not send notifications yet.
+
 ## Friends and sharing
 
 Nothing in this section happens unless you use Friends.
@@ -90,6 +94,7 @@ Nothing in this section happens unless you use Friends.
   notes, pins, reading sessions, progress, series, or covers. Publishing again replaces the
   earlier copy, and **Stop sharing** deletes it.
 - Your friend requests, friends, and blocked people.
+- If you turned on friend notifications: this phone's notification address (a push token), until you turn them off, sign out, or delete your account.
 - If you add a phone number and switch on "Let people find me by phone": a
   keyed one-way code derived from the number. The number itself is not stored,
   and the server does not check that it is yours.
@@ -123,7 +128,7 @@ verified, and there is currently no password reset; a forgotten password means
 the account cannot be recovered (you can create a new one).
 
 **Sharing with others.** The developer does not sell data or share it with
-advertisers or analytics providers. The account server does not use third-party
+advertisers or analytics providers. The account server uses Google's Firebase Cloud Messaging only to deliver friend notifications you turned on (see above), and no other third-party
 services. GitHub receives Android update requests as described above. Open Library (above) receives only your book search text, as
 described, normally from the developer's server rather than from your device,
 and, when a phone downloads a cover again, the cover address (and that phone's

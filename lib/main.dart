@@ -17,6 +17,8 @@ import 'core/storage/draft_store.dart';
 import 'core/storage/preferences_store.dart';
 import 'core/storage/session_store.dart';
 import 'features/library/data/local_library_repository.dart';
+import 'features/push/data/firebase_push_service.dart';
+import 'features/push/presentation/push_controller.dart';
 import 'features/sync/data/syncing_repository.dart';
 
 Future<void> main() async {
@@ -50,9 +52,11 @@ Future<void> main() async {
           .then(CoverStore.collectGarbage)
           .then((_) {}, onError: (_) {}),
     );
+    final push = await FirebasePushService.create();
     runApp(
       ProviderScope(
         overrides: [
+          pushServiceProvider.overrideWithValue(push),
           repositoryProvider.overrideWithValue(
             SyncingRepository(repository, changes),
           ),

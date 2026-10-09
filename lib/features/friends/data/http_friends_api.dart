@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import '../../../core/storage/session_store.dart';
 import '../../library/domain/models.dart';
+import '../../push/domain/push_models.dart';
 import '../../sync/domain/sync_models.dart';
 import '../domain/friends_models.dart';
 
@@ -12,7 +13,7 @@ import '../domain/friends_models.dart';
 /// like the Open Library lookup. Nothing here runs unless the reader opens
 /// Friends and acts; the library itself is never sent, only what the reader
 /// publishes.
-class HttpFriendsApi implements FriendsApi, LibrarySyncApi {
+class HttpFriendsApi implements FriendsApi, LibrarySyncApi, PushApi {
   final SessionStore _session;
   final Uri _origin;
   final HttpClient Function() _client;
@@ -540,5 +541,21 @@ class HttpFriendsApi implements FriendsApi, LibrarySyncApi {
     );
     if (json == null) throw const LibraryConflictException();
     return _revision(json);
+  }
+
+  // --- push notifications ----------------------------------------------------
+
+  @override
+  Future<void> registerDevice(String token, {required String platform}) async {
+    await _call(
+      'PUT',
+      '/me/devices',
+      body: {'token': token, 'platform': platform},
+    );
+  }
+
+  @override
+  Future<void> removeDevice(String token) async {
+    await _call('POST', '/me/devices/remove', body: {'token': token});
   }
 }

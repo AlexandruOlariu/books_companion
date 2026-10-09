@@ -569,4 +569,36 @@ void main() {
       await h.start();
     });
   });
+
+  group('push notifications', () {
+    test('a token is registered and removed with the sign-in', () async {
+      await signedIn();
+      h.handler = (_) => (204, null);
+      await h.api.registerDevice('t' * 30, platform: 'android');
+      await h.api.removeDevice('t' * 30);
+      final put = h.seen[h.seen.length - 2], remove = h.seen.last;
+      expect((put.method, put.path), ('PUT', '/me/devices'));
+      expect(put.body, {'token': 't' * 30, 'platform': 'android'});
+      expect(put.auth, startsWith('Bearer '));
+      expect((remove.method, remove.path), ('POST', '/me/devices/remove'));
+      expect(remove.body, {'token': 't' * 30});
+    });
+
+    test('an unreachable server is a readable error, not a sign-out', () async {
+      await signedIn();
+      await h.stop();
+      await expectLater(
+        h.api.registerDevice('t' * 30, platform: 'android'),
+        throwsA(
+          isA<FriendsException>().having(
+            (e) => e.signedOut,
+            'signedOut',
+            false,
+          ),
+        ),
+      );
+      h = Harness();
+      await h.start();
+    });
+  });
 }

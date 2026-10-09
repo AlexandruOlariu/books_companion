@@ -128,6 +128,24 @@ class Library(Base):
     )
 
 
+class DeviceToken(Base):
+    """A phone that agreed to push notifications. The token is Firebase's
+    address for one installed app; one token belongs to one account at a time,
+    so signing in as someone else on the same phone moves it."""
+
+    __tablename__ = "device_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    token: Mapped[str] = mapped_column(String(4096), unique=True)
+    platform: Mapped[str] = mapped_column(String(10))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class RateEvent(Base):
     __tablename__ = "rate_events"
     __table_args__ = (Index("ix_rate_events_key_created", "key", "created_at"),)
