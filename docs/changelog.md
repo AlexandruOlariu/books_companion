@@ -2,6 +2,12 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-15: notifications bell
+
+- Reported: a friend (Bianca) never saw that a friend request had been sent to her. Requests were visible only deep in Settings > Friends and sharing, and the system notification needs the optional switch.
+- Added a bell in the top bar with a count of waiting friend requests, and a `/notifications` screen with Accept and Decline. The count refreshes on app open, on resume, and when a push arrives while the app is open. No server change and no new endpoint (`GET /friends/requests`, already used by Friends, is now also called at launch and on resume for a signed-in reader).
+- Not done: a history of past events (the server stores none), and tapping a push still opens Friends. 3 new tests (284).
+
 ## 2026-10-15: clearer update notice
 
 - Reported: the notice said 0.1.11 was available on a phone believed to be up to date. The check itself is correct (compares installed `versionCode` with `update.json`'s `buildNumber`; the live release is 0.1.11, build 13), so the notice and Settings now show the installed build number and the new one, to make a mismatch visible.

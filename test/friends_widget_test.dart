@@ -275,6 +275,51 @@ void main() {
       expect(find.text('Bob Ionescu'), findsOneWidget);
     });
 
+    testWidgets('the bell counts waiting requests and opens them', (
+      tester,
+    ) async {
+      api.requestList = const FriendRequests(incoming: [bob, cris]);
+      await pump(tester);
+      expect(
+        find.byTooltip('Notifications, 2 friend requests'),
+        findsOneWidget,
+      );
+      expect(find.text('2'), findsOneWidget);
+      await tester.tap(find.byTooltip('Notifications, 2 friend requests'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bob Ionescu'), findsOneWidget);
+      expect(find.text('Cris Dima'), findsOneWidget);
+      await tester.tap(find.text('Accept').first);
+      await tester.pumpAndSettle();
+      expect(api.accepted, ['u-bob']);
+      expect(find.text('You and Bob Ionescu are now friends.'), findsOneWidget);
+      expect(find.text('Bob Ionescu'), findsNothing);
+      await tester.tap(find.text('Decline'));
+      await tester.pumpAndSettle();
+      expect(find.text('Nothing new.'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Notifications'), findsOneWidget);
+    });
+
+    testWidgets('the bell is absent in the demo', (tester) async {
+      api.requestList = const FriendRequests(incoming: [bob]);
+      await pump(tester, demo: true);
+      expect(find.byTooltip('Settings and backups'), findsOneWidget);
+      expect(find.textContaining('Notifications'), findsNothing);
+    });
+
+    testWidgets('the bell has no number when nobody is waiting', (
+      tester,
+    ) async {
+      api.requestList = const FriendRequests(outgoing: [bob]);
+      await pump(tester);
+      expect(find.byTooltip('Notifications'), findsOneWidget);
+      await tester.tap(find.byTooltip('Notifications'));
+      await tester.pumpAndSettle();
+      expect(find.text('Nothing new.'), findsOneWidget);
+    });
+
     testWidgets(
       'finding someone by username sends a request, not a friendship',
       (tester) async {

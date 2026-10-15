@@ -9,7 +9,9 @@ import '../core/widgets/book_opening.dart';
 import '../features/book_details/presentation/book_details_screen.dart';
 import '../features/friends/presentation/account_screen.dart';
 import '../features/friends/presentation/friend_shelf_screen.dart';
+import '../features/friends/presentation/friends_providers.dart';
 import '../features/friends/presentation/friends_screen.dart';
+import '../features/friends/presentation/notifications_screen.dart';
 import '../features/history/presentation/journal_screen.dart';
 import '../features/library/presentation/book_form.dart';
 import '../features/library/presentation/library_screen.dart';
@@ -122,6 +124,8 @@ class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
     if (state == AppLifecycleState.resumed) {
       if (ref.read(signedInProvider).value == true) {
         unawaited(ref.read(pushControllerProvider.notifier).refresh());
+        // The bell's count: requests may have arrived while the app was away.
+        ref.invalidate(friendRequestsProvider);
       }
       unawaited(
         ref.read(updateControllerProvider.notifier).check(automatic: true),
@@ -255,6 +259,10 @@ class _ReadingLibraryAppState extends ConsumerState<ReadingLibraryApp>
       GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
       GoRoute(path: '/friends', builder: (_, _) => const FriendsScreen()),
       GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const NotificationsScreen(),
+      ),
+      GoRoute(
         path: '/friends/:id',
         builder: (_, state) => FriendShelfScreen(
           id: state.pathParameters['id']!,
@@ -310,6 +318,7 @@ class _RoomShell extends ConsumerWidget {
         ],
       ),
       actions: [
+        const NotificationsButton(),
         const ShareAppButton(iconOnly: true),
         IconButton(
           tooltip: 'Settings and backups',
