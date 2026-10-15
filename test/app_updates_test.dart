@@ -206,6 +206,10 @@ void main() {
         ),
       ),
     );
+    expect(
+      find.text('Installed: 0.1.1 (build 10). New: build 11.'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Download update').first);
     await tester.pumpAndSettle();
     expect(service.downloaded, newer);
@@ -213,7 +217,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Later'), findsNothing);
     expect(find.text('Download update'), findsOneWidget);
-    expect(find.text('Installed version: 0.1.1'), findsOneWidget);
+    expect(find.text('Installed version: 0.1.1 (build 10)'), findsOneWidget);
   });
 
   testWidgets('notice and Settings fit a small phone at 200% text', (

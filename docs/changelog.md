@@ -2,6 +2,12 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-15: clearer update notice
+
+- Reported: the notice said 0.1.11 was available on a phone believed to be up to date. The check itself is correct (compares installed `versionCode` with `update.json`'s `buildNumber`; the live release is 0.1.11, build 13), so the notice and Settings now show the installed build number and the new one, to make a mismatch visible.
+- Likely cause, not confirmed on the phone: every release is saved by the browser as `reading-library.apk`, so Downloads can hold several copies and an older one gets opened and reinstalled. Settings now says to open the newest copy and delete older ones. A versioned file name would need a pipeline change (the app and permanent link rely on the fixed name) and was not made.
+- UpdateNotice/UpdateSettings strings only; one existing widget test updated, no new tests (281).
+
 ## 2026-10-09: friend notifications
 
 - D47: the server now pushes a notification (Firebase Cloud Messaging) when someone sends a friend request and when one is accepted. The text never contains a name or book. The app offers notifications once after sign-in, has a switch under Friends, asks the Android 13 permission only on turn-on, opens Friends when a notification is tapped, and turns them off on sign-out.

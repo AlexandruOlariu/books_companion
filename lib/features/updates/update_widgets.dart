@@ -19,6 +19,12 @@ class UpdateNotice extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Version ${update.version} is available.'),
+            if (state.installed != null)
+              Text(
+                'Installed: ${state.installed!.version} '
+                '(build ${state.installed!.buildNumber}). '
+                'New: build ${update.buildNumber}.',
+              ),
             if (state.message != null) Text(state.message!),
             Wrap(
               spacing: 12,
@@ -57,12 +63,19 @@ class UpdateSettings extends ConsumerWidget {
         Text('App updates', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         if (state.installed != null)
-          Text('Installed version: ${state.installed!.version}'),
+          Text(
+            'Installed version: ${state.installed!.version} '
+            '(build ${state.installed!.buildNumber})',
+          ),
         if (state.available != null) ...[
-          Text('Version ${state.available!.version} is available.'),
+          Text(
+            'Version ${state.available!.version} is available '
+            '(build ${state.available!.buildNumber}).',
+          ),
           const SizedBox(height: 12),
           const Text(
-            'Download the update, open the downloaded file, and confirm Update on your phone. Your library stays in place.',
+            'Download the update, open the downloaded file, and confirm Update on your phone. Your library stays in place. '
+            'Every release uses the file name reading-library.apk, so open the newest one in Downloads (delete older copies first).',
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
