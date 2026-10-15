@@ -98,7 +98,7 @@ Friend notifications (2026-10-09), on the emulator (Pixel 9 Pro image, Android 1
 
 ## Not verified (needs hardware or a Mac)
 
-- Any native iOS flow (image import, file export and restore, sharing, back navigation, accessibility) and any run on an iOS simulator or device. Only the unsigned simulator *build* has been seen to pass, in CI (see below).
+- Any native iOS flow (image import, file export and restore, sharing, back navigation, accessibility) and any run of the app on an iOS simulator or device. Seen so far: the unsigned simulator *build* passes in CI and, on 2026-10-15, locally on a Mac (macOS 27.0.1, Xcode 27.0, 51 s); a debug build signed with a personal team was installed on a real iPhone (iOS 27.0.1) and its certificate trusted, but the app's own screens were not seen because debug builds only start from Xcode. A Release build has not been run on the device.
 - Performance with 500 books on a midrange physical Android device (profile mode). Emulator timings do not count.
 - Usability: a new reader adding a past book, updating a page, and finding a pin without coaching.
 - TalkBack and VoiceOver, reduced motion, maximum platform text sizes, and background and process lifecycle on real devices.

@@ -22,7 +22,7 @@ See the final verification notes below for execution results. Tests cover partia
 
 - **Friend notifications (D47):** working on the emulator against the real server (see `testing.md`). The CI secret `GOOGLE_SERVICES_JSON` is set and release `v0.1.10` carries the Firebase configuration. Still to do: install that release on two real phones and try it, check the acceptance notification, and set up iOS. Check the stores' data declarations (`store-privacy.md`).
 
-- Run the generated iOS project on macOS/Xcode and test iOS image import, file export/restore, sharing, back navigation, and accessibility. Linux cannot compile an iOS application; the unsigned simulator build now passes in CI (see below), but no simulator or device run has happened.
+- Run the generated iOS project on macOS/Xcode and test iOS image import, file export/restore, sharing, back navigation, and accessibility. Linux cannot compile an iOS application; the unsigned simulator build now passes in CI (see below), but no simulator or device run of the app's screens has happened. On 2026-10-15 the simulator build also passed locally on a Mac and a signed debug build was installed on a real iPhone (see `testing.md`); the next step is a Release run on the device.
 - Profile a 500-book library on a chosen midrange physical Android device. Emulator timings do not establish physical-device performance.
 - Have a new reader try adding a past book, updating a page, and finding a pin without coaching. The visual direction has implementation checks, not user usability validation.
 - Exercise TalkBack/VoiceOver, reduced motion, maximum platform text settings, and interrupted background/process lifecycle behavior on real devices.

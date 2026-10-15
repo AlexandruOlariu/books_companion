@@ -55,8 +55,20 @@ page Google Play requires, and make sure the server is running and backed up
 ## 3. iOS signing (on a Mac)
 
 Open `ios/Runner.xcworkspace`, select your team under Runner > Signing &
-Capabilities, then `flutter build ipa --release`. Signing style is Automatic and
-no team is committed.
+Capabilities, then `flutter build ipa --release`. Signing style is Automatic.
+The project file carries the owner's **personal** team id (`639T9M69R7`, D49) so
+the owner can run it on their own iPhone; anyone else must pick their own team
+in Xcode (or change `DEVELOPMENT_TEAM`), and a store upload needs the real team
+and the permanent bundle id.
+
+**Installing on a real iPhone from a Mac (tried 2026-10-15).** Add your Apple ID in Xcode > Settings > Apple Accounts, create an Apple Development certificate (Manage Certificates > + > Apple Development), choose that team for the Runner target, pick the iPhone as destination and run. Notes from doing it:
+
+- Over SSH the build compiles but signing fails with `errSecInternalComponent`: the login keychain is locked in an SSH session. Run once from Xcode itself (answer "Always Allow" if asked) or sign in a desktop session.
+- Flutter picks the only identity in the keychain on its own. On a shared Mac that can be someone else's, so build with `xcodebuild` and `DEVELOPMENT_TEAM=<team> CODE_SIGN_IDENTITY="Apple Development"` instead of `flutter build ios` when more than one team is present.
+- A debug build installs but, on iOS 14 and later, only starts from Xcode or Flutter tooling; for an icon launch build **Release** (Product > Scheme > Edit Scheme > Run > Build Configuration).
+- The first run on a new iOS version copies and extracts device symbols (several GB), which takes minutes. Trust the developer certificate on the phone (Settings > General > VPN & Device Management) and turn on Developer Mode.
+- A free Apple account signs for 7 days and allows three apps; a paid team signs for a year. Free teams cannot use the Push Notifications capability, which this project does not request.
+- Xcode 27 rewrites `objectVersion` and re-orders `Info.plist` keys; those edits are noise and were not committed.
 
 Not yet done (needs Xcode): an app-level `PrivacyInfo.xcprivacy` added to the
 Runner target. The app code itself uses no tracking; it sends only the account data and the saved library

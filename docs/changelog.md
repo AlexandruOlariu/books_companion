@@ -2,6 +2,11 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-15: first iPhone install, signing team committed
+
+- Built the iOS app on a Mac mini (M2, macOS 27.0.1, Xcode 27.0, Flutter 3.47.6 from the same tag as CI): `flutter build ios --simulator --debug` passed locally, then a debug build signed with the owner's personal team was installed on a real iPhone. The app itself has not been seen running yet (debug builds do not start from the icon; the screen showed Flutter's iOS 14+ debug notice). A Release run is the next step.
+- Pushed the signing team id (D49) and the lessons from the install in `release.md` (section 3). No app code changed.
+
 ## 2026-10-15: notifications bell
 
 - Reported: a friend (Bianca) never saw that a friend request had been sent to her. Requests were visible only deep in Settings > Friends and sharing, and the system notification needs the optional switch.
