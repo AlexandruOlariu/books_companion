@@ -368,4 +368,42 @@ void main() {
       );
     });
   });
+
+  group('seriesShelf', () {
+    test('lists the reader\'s books of the series in number order', () {
+      final three = book(
+        'Three',
+        'A B',
+        BookStatus.wantToRead,
+        series: 'The Dune',
+        number: 3,
+      );
+      final loose = book('Loose', 'A B', BookStatus.finished, series: 'Dune');
+      final one = book(
+        'One',
+        'A B',
+        BookStatus.finished,
+        series: 'dune',
+        number: 1,
+      );
+      final other = book(
+        'Other',
+        'A B',
+        BookStatus.finished,
+        series: 'Ender',
+        number: 1,
+      );
+      final plain = book('Plain', 'A B', BookStatus.finished);
+      final shelf = seriesShelf(
+        library([three, loose, one, other, plain]),
+        'Dune',
+      );
+      // Case is ignored; a leading article is too (titleKey); unnumbered last.
+      expect(shelf.map((b) => b.title), ['One', 'Three', 'Loose']);
+    });
+
+    test('is empty when the reader has no book of the series', () {
+      expect(seriesShelf(library([]), 'Dune'), isEmpty);
+    });
+  });
 }

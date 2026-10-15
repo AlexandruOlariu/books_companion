@@ -254,6 +254,26 @@ List<Recommendation> libraryRecommendations(
 
 int _max(int a, int b) => a > b ? a : b;
 
+/// The reader's own books of one series, in number order (unnumbered ones
+/// last, then by title). It is what the suggestion's details show, so the
+/// reader sees where a suggested volume sits among the books they have.
+List<BookEntry> seriesShelf(LibrarySnapshot library, String seriesName) {
+  final key = _seriesKey(seriesName);
+  final books = [
+    for (final b in library.books)
+      if (b.seriesName != null && _seriesKey(b.seriesName!) == key) b,
+  ];
+  books.sort((a, b) {
+    if (a.seriesNumber == null || b.seriesNumber == null) {
+      if (a.seriesNumber != null) return -1;
+      if (b.seriesNumber != null) return 1;
+      return titleKey(a.title).compareTo(titleKey(b.title));
+    }
+    return a.seriesNumber!.compareTo(b.seriesNumber!);
+  });
+  return books;
+}
+
 /// Books friends finished that the reader does not have in any status, most
 /// friends first, then authors the reader already reads. Friends' shelves are
 /// only read here; nothing from them is added to the library, its dates, its

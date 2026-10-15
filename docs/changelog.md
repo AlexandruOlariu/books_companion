@@ -2,6 +2,12 @@
 
 What changed, newest first. One entry per working session or meaningful change. Add entries with `update-docs`; do not rewrite history.
 
+## 2026-10-15: details for a suggested book
+
+- Tapping a card in "What to read next" now opens a details sheet (`recommendation_sheet.dart`): the reason, the book's pages and language when it is on the Wishlist, the reader's own books of the series in order (new rule `seriesShelf`), friends' names, and the same actions as the card. It uses only what the phone has, so there is no new request or permission and the privacy documents are unchanged (D50). The sheet opens in the root navigator so the tab bar does not cover its buttons.
+- 289 tests (5 added); analyzer and format clean. Not run on a device: the Pixel_9_Pro emulator crashed on boot.
+- Separate from the code: the owner's account library on the server was given pages, language (Romanian or English) and Open Library covers for the 23 Dune books (data edit, no code change).
+
 ## 2026-10-15: first iPhone install, signing team committed
 
 - Built the iOS app on a Mac mini (M2, macOS 27.0.1, Xcode 27.0, Flutter 3.47.6 from the same tag as CI): `flutter build ios --simulator --debug` passed locally, then a debug build signed with the owner's personal team was installed on a real iPhone. The app itself has not been seen running yet (debug builds do not start from the icon; the screen showed Flutter's iOS 14+ debug notice). A Release run is the next step.

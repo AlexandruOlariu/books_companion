@@ -113,6 +113,66 @@ void main() {
     expect((await repo.load()).books, hasLength(1));
   });
 
+  testWidgets('tapping a suggestion shows details and changes nothing', (
+    tester,
+  ) async {
+    await finish('Dune', 'Frank Herbert', series: 'Dune', n: 1);
+    await finish('Dune Messiah', 'Frank Herbert', series: 'Dune', n: 2);
+    await openReading(tester);
+    await reveal(tester, find.text('What to read next'));
+    await tester.tap(find.bySemanticsLabel(RegExp('More about Dune, book 3')));
+    await tester.pumpAndSettle();
+    expect(find.text('Why it is suggested'.toUpperCase()), findsOneWidget);
+    expect(find.text('Your shelf in Dune'.toUpperCase()), findsOneWidget);
+    // The reader's two finished books, then the suggested volume.
+    expect(find.text('Dune Messiah'), findsOneWidget);
+    expect(find.text('Not on your shelf'), findsOneWidget);
+    expect(find.textContaining('Nothing is looked up online'), findsOneWidget);
+    // Closing it adds nothing.
+    await tester.tapAt(const Offset(180, 40));
+    await tester.pumpAndSettle();
+    expect((await repo.load()).books, hasLength(2));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the details sheet can add the suggestion to the Wishlist', (
+    tester,
+  ) async {
+    await finish('Dune', 'Frank Herbert', series: 'Dune', n: 1);
+    await openReading(tester);
+    await reveal(tester, find.text('What to read next'));
+    await tester.tap(find.bySemanticsLabel(RegExp('More about Dune, book 2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Add to Wishlist'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.widgetWithText(TextField, 'Author'))
+          .controller!
+          .text,
+      'Frank Herbert',
+    );
+    expect((await repo.load()).books, hasLength(1));
+  });
+
+  testWidgets('Not interested in the details sheet hides it', (tester) async {
+    await finish('Dune', 'Frank Herbert', series: 'Dune', n: 1);
+    await openReading(tester);
+    await reveal(tester, find.text('What to read next'));
+    await tester.tap(find.bySemanticsLabel(RegExp('More about Dune, book 2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Not interested').last);
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Hidden. It will not be suggested again.'),
+      findsOneWidget,
+    );
+    expect(
+      await prefs.read(dismissedRecommendationsPreference),
+      contains('series:dune:2'),
+    );
+  });
+
   testWidgets('Not interested hides it, can be undone, and is remembered', (
     tester,
   ) async {

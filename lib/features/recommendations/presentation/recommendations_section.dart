@@ -7,6 +7,7 @@ import '../../../core/widgets/book_cover.dart';
 import '../../../core/widgets/common.dart';
 import '../../library/domain/models.dart';
 import '../domain/recommendations.dart';
+import 'recommendation_sheet.dart';
 import 'recommendations_providers.dart';
 
 /// "What to read next": suggestions from the reader's own shelf and from what
@@ -67,7 +68,7 @@ class RecommendationsSection extends ConsumerWidget {
               const SizedBox(height: 24),
               Semantics(header: true, child: Eyebrow(label)),
               const SizedBox(height: 12),
-              for (final item in items) _RecommendationCard(item),
+              for (final item in items) _RecommendationCard(item, data),
             ],
         ],
       ),
@@ -100,7 +101,8 @@ class _NothingYet extends StatelessWidget {
 
 class _RecommendationCard extends ConsumerWidget {
   final Recommendation item;
-  const _RecommendationCard(this.item);
+  final LibrarySnapshot data;
+  const _RecommendationCard(this.item, this.data);
 
   /// Only the Wishlist books are in the library; the rest get a generated
   /// cover, because covers are never shared and a missing volume has none.
@@ -113,6 +115,47 @@ class _RecommendationCard extends ConsumerWidget {
     status: BookStatus.wantToRead,
   );
 
+  /// Opens the Wishlist book, or the add form with what is known filled in.
+  void _primary(BuildContext context) => context.push(
+    item.bookId != null
+        ? '/book/${item.bookId}'
+        : Uri(
+            path: '/add',
+            queryParameters: {
+              if (item.title.isNotEmpty) 'title': item.title,
+              'author': item.author,
+              if (item.seriesName != null) 'series': item.seriesName!,
+              if (item.seriesNumber != null) 'number': '${item.seriesNumber}',
+            },
+          ).toString(),
+  );
+
+  void _dismiss(BuildContext context, WidgetRef ref) {
+    final dismissed = ref.read(dismissedRecommendationsProvider.notifier);
+    dismissed.dismiss(item.key);
+    notifyUser(
+      context,
+      'Hidden. It will not be suggested again.',
+      action: SnackBarAction(
+        label: 'Undo',
+        onPressed: () => dismissed.restore(item.key),
+      ),
+    );
+  }
+
+  Future<void> _details(BuildContext context, WidgetRef ref) async {
+    final choice = await showRecommendationSheet(context, item, data);
+    if (!context.mounted) return;
+    switch (choice) {
+      case RecommendationChoice.primary:
+        _primary(context);
+      case RecommendationChoice.dismiss:
+        _dismiss(context, ref);
+      case null:
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final inLibrary = item.bookId != null;
@@ -124,87 +167,90 @@ class _RecommendationCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: RoomColors.line),
         ),
-        padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ExcludeSemantics(
-              child: BookCover(book: _cover, width: 60, height: 90),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.heading,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  if (item.title.isNotEmpty && item.seriesName != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      item.seriesNumber == null
-                          ? item.seriesName!
-                          : '${item.seriesName}, book ${item.seriesNumber}',
-                      style: const TextStyle(
-                        color: RoomColors.muted,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 4),
-                  Text(
-                    item.author,
-                    style: const TextStyle(color: RoomColors.muted),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.reason,
-                    style: const TextStyle(fontSize: 13, height: 1.4),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
+            // The cover and text open the details; the buttons below stay
+            // separate controls.
+            Semantics(
+              button: true,
+              excludeSemantics: true,
+              label: 'More about ${item.heading}. ${item.reason}',
+              child: InkWell(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+                onTap: () => _details(context, ref),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      OutlinedButton(
-                        onPressed: () => context.push(
-                          inLibrary
-                              ? '/book/${item.bookId}'
-                              : Uri(
-                                  path: '/add',
-                                  queryParameters: {
-                                    if (item.title.isNotEmpty)
-                                      'title': item.title,
-                                    'author': item.author,
-                                    if (item.seriesName != null)
-                                      'series': item.seriesName!,
-                                    if (item.seriesNumber != null)
-                                      'number': '${item.seriesNumber}',
-                                  },
-                                ).toString(),
-                        ),
-                        child: Text(
-                          inLibrary ? 'Open book' : 'Add to Wishlist',
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          final dismissed = ref.read(
-                            dismissedRecommendationsProvider.notifier,
-                          );
-                          dismissed.dismiss(item.key);
-                          notifyUser(
-                            context,
-                            'Hidden. It will not be suggested again.',
-                            action: SnackBarAction(
-                              label: 'Undo',
-                              onPressed: () => dismissed.restore(item.key),
+                      BookCover(book: _cover, width: 60, height: 90),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item.heading,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: RoomColors.muted,
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                        child: const Text('Not interested'),
+                            if (item.title.isNotEmpty &&
+                                item.seriesName != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                item.seriesNumber == null
+                                    ? item.seriesName!
+                                    : '${item.seriesName}, book ${item.seriesNumber}',
+                                style: const TextStyle(
+                                  color: RoomColors.muted,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 4),
+                            Text(
+                              item.author,
+                              style: const TextStyle(color: RoomColors.muted),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              item.reason,
+                              style: const TextStyle(fontSize: 13, height: 1.4),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(92, 0, 16, 16),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => _primary(context),
+                    child: Text(inLibrary ? 'Open book' : 'Add to Wishlist'),
+                  ),
+                  TextButton(
+                    onPressed: () => _dismiss(context, ref),
+                    child: const Text('Not interested'),
                   ),
                 ],
               ),
